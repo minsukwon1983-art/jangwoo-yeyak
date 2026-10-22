@@ -40,6 +40,8 @@ button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 1
 <div class="w" id="app">
   <div class="top"><img src="mic-180.png" alt="장우 예약">
     <div><h1>장우 예약</h1><div class="who" id="who">자비스에게 보내기</div></div></div>
+  <button id="ph" class="paste">📷 캡처 사진으로 보내기</button>
+  <input id="f" type="file" accept="image/*" multiple hidden>
   <button id="p" class="paste">📋 복사한 글 붙여넣고 보내기</button>
   <textarea id="t" placeholder="여기를 누르고, 키보드의 🎤 마이크를 눌러 말하거나 붙여넣기 하세요"></textarea>
   <button id="b">보내기</button>
@@ -49,7 +51,8 @@ button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 1
   · 룸 바꾸기: "25일 김철수님 5번룸으로 바꿔 줘"<br>
   · 시간·인원: "25일 김철수님 8명, 7시로"<br>
   · 취소: "25일 김철수님 취소"<br>
-  · 에이닷 통화 요약: 요약 글 <b>복사</b> → 위 <b>📋 버튼</b> 한 번<br>
+  · 에이닷 통화 내용: 화면 <b>캡처</b> → 위 <b>📷 버튼</b> → 캡처 고르기 (여러 장 가능)<br>
+  · 복사한 글이 있으면: 위 <b>📋 버튼</b> 한 번<br>
   · 예약 현황: "오늘 예약 현황 보내 줘"<br>
   → 보내면 자비스가 <b>바로</b> 장부에 넣고 4명에게 카톡을 보냅니다. 결과는 보내기 버튼 아래에 떠요.</div>
 </div>
@@ -63,16 +66,39 @@ if (!K) {
 } else {
   if (W) document.getElementById("who").textContent = W + "님 · 자비스에게 보내기";
   var t = document.getElementById("t"), b = document.getElementById("b"), p = document.getElementById("p"), m = document.getElementById("m");
-  function send() {
-    if (!t.value.trim()) { m.textContent = "보낼 내용을 먼저 써 주세요."; return; }
-    b.disabled = p.disabled = true; b.textContent = "보내는 중…"; m.textContent = "자비스가 읽고 있어요… (10초쯤)";
-    fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: t.value }) })
+  var ph = document.getElementById("ph"), f = document.getElementById("f");
+  function busy(on) { b.disabled = p.disabled = ph.disabled = on; b.textContent = on ? "보내는 중…" : "보내기"; }
+  function send(images) {
+    images = images || [];
+    if (!t.value.trim() && !images.length) { m.textContent = "보낼 내용을 먼저 써 주세요."; return; }
+    busy(true); m.textContent = "자비스가 읽고 있어요… (" + (images.length ? "20~30초" : "10초쯤") + ")";
+    fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: t.value, images: images }) })
       .then(function (r) { return r.text(); })
       .then(function (r) { m.textContent = r; if (r.indexOf("✅") === 0 || r.indexOf("📋") === 0) t.value = ""; })
       .catch(function () { m.textContent = "❌ 못 보냈어요. 인터넷을 확인하고 다시 눌러 주세요."; })
-      .then(function () { b.disabled = p.disabled = false; b.textContent = "보내기"; });
+      .then(function () { busy(false); });
   }
-  b.onclick = send;
+  // 📷 캡처 사진: 휴대폰에서 줄여서(긴 쪽 1600px, JPEG) 보낸다
+  function shrink(file) {
+    return new Promise(function (ok, no) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var s = Math.min(1, 1600 / Math.max(img.width, img.height));
+        var c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        ok(c.toDataURL("image/jpeg", 0.8).split(",")[1]);
+      };
+      img.onerror = function () { no(); }; img.src = url;
+    });
+  }
+  ph.onclick = function () { f.value = ""; f.click(); };
+  f.onchange = function () {
+    var files = Array.prototype.slice.call(f.files || [], 0, 4);
+    if (!files.length) return;
+    m.textContent = "사진 " + files.length + "장 준비 중…";
+    Promise.all(files.map(shrink)).then(send).catch(function () { m.textContent = "❌ 사진을 못 읽었어요. 다시 골라 주세요."; });
+  };
+  b.onclick = function () { send(); };
   // 📋 복사해 둔 글(에이닷 요약 등)을 붙여넣고 바로 보내기. 아이폰은 처음에 "붙여넣기" 허락 말풍선이 뜰 수 있음
   p.onclick = function () {
     if (!navigator.clipboard || !navigator.clipboard.readText) {
@@ -80,7 +106,7 @@ if (!K) {
     }
     navigator.clipboard.readText().then(function (s) {
       if (!s || !s.trim()) { m.textContent = "복사된 글이 없어요. 에이닷 요약을 먼저 복사해 주세요."; return; }
-      t.value = s.trim(); send();
+      t.value = s.trim(); send([]);
     }).catch(function () {
       m.textContent = "붙여넣기를 허락해 주세요. 안 되면 글 칸을 꾹 눌러 붙여넣기 해 주세요."; t.focus();
     });
