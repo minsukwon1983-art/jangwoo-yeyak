@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>장우 예약</title>
+<meta name="apple-mobile-web-app-title" content="장우 예약">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f6f1e8">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="mic-180.png">
+<link rel="icon" sizes="192x192" href="mic-192.png">
+<link rel="icon" sizes="512x512" href="mic-512.png">
+<!--
+  장우가든 [장우 예약] 버튼 (아이폰·갤럭시 공용, 홈 화면 아이콘은 마이크 — 장우가든 로고는 자리 배치 앱이 이미 씀)
+  링크: https://minsukwon1983-art.github.io/jangwoo-yeyak/?k=열쇠&w=이름
+  열쇠는 이 파일에 넣지 않는다. 링크에만 있다.
+  보내는 곳: Apps Script 웹 앱 doPost (요청함.gs) → 노션 "자비스 요청함"
+-->
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f6f1e8;color:#2b2118;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.w{max-width:520px;margin:0 auto;padding:18px 16px 40px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.top img{width:56px;height:56px;border-radius:14px}
+h1{font-size:28px;margin:0;color:#7a2e1b}.who{font-size:16px;color:#6b5a48}
+textarea{width:100%;height:40vh;min-height:200px;font-size:20px;line-height:1.5;padding:14px;border:2px solid #c9b79c;border-radius:14px;background:#fff;color:#2b2118;-webkit-appearance:none}
+button{width:100%;font-size:24px;font-weight:700;padding:18px;border:0;border-radius:14px;background:#7a2e1b;color:#fff;margin-top:12px;-webkit-appearance:none}
+button:disabled{opacity:.5}
+.msg{font-size:20px;margin-top:14px;white-space:pre-line;min-height:1.5em}
+.ex{font-size:16px;color:#6b5a48;margin-top:18px;line-height:1.7;background:#fffaf2;border-radius:12px;padding:12px 14px}
+.ex b{color:#2b2118}
+.bad{font-size:20px;padding:24px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="w" id="app">
+  <div class="top"><img src="mic-180.png" alt="장우 예약">
+    <div><h1>장우 예약</h1><div class="who" id="who">자비스에게 보내기</div></div></div>
+  <textarea id="t" placeholder="여기를 누르고, 키보드의 🎤 마이크를 눌러 말하거나 붙여넣기 하세요"></textarea>
+  <button id="b">보내기</button>
+  <div class="msg" id="m"></div>
+  <div class="ex"><b>이렇게 보내세요</b><br>
+  · 새 예약: "26일 저녁 7시 김철수 6명 공일공 1234 5678"<br>
+  · 룸 바꾸기: "25일 김철수님 5번룸으로 바꿔 줘"<br>
+  · 시간·인원: "25일 김철수님 8명, 7시로"<br>
+  · 취소: "25일 김철수님 취소"<br>
+  · 에이닷 통화 요약: 요약 글 <b>복사</b> → 여기 꾹 눌러 <b>붙여넣기</b><br>
+  → 매시 07분에 자비스가 장부에 넣고 4명에게 카톡이 갑니다.</div>
+</div>
+<script>
+var URL_ = "https://script.google.com/macros/s/AKfycbwPOkSzu48JYIuWm_2B0cKNOdfr_rwQ3VTt1shG05Ew1wMB92dqQj2maYzbq36Mw0-_/exec";
+var q = new URLSearchParams(location.search), K = q.get("k") || "", W = q.get("w") || "";
+// 홈 화면에서 열 때 주소 뒷부분이 빠지는 경우를 대비해 이 휴대폰에 기억해 둔다
+try { if (K) { localStorage.setItem("jw_k", K); localStorage.setItem("jw_w", W); } else { K = localStorage.getItem("jw_k") || ""; W = localStorage.getItem("jw_w") || ""; } } catch (e) {}
+if (!K) {
+  document.getElementById("app").innerHTML = '<div class="bad">링크가 맞지 않아요.<br>자비스에게 받은 본인 링크로 다시 열어 주세요.</div>';
+} else {
+  if (W) document.getElementById("who").textContent = W + "님 · 자비스에게 보내기";
+  document.getElementById("b").onclick = function () {
+    var t = document.getElementById("t"), b = this, m = document.getElementById("m");
+    if (!t.value.trim()) { m.textContent = "보낼 내용을 먼저 써 주세요."; return; }
+    b.disabled = true; b.textContent = "보내는 중…"; m.textContent = "";
+    fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: t.value }) })
+      .then(function (r) { return r.text(); })
+      .then(function (r) { m.textContent = r; if (r.indexOf("✅") === 0) t.value = ""; })
+      .catch(function () { m.textContent = "❌ 못 보냈어요. 인터넷을 확인하고 다시 눌러 주세요."; })
+      .then(function () { b.disabled = false; b.textContent = "보내기"; });
+  };
+}
+</script>
+</body>
+</html>
