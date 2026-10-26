@@ -37,7 +37,7 @@ button{font-family:inherit}
 .mn h2{margin:0;font-size:28px;letter-spacing:-1px}
 .mn h2 small{font-size:15px;color:var(--muted);font-weight:600;margin-left:6px}
 .mn .nv{display:flex;gap:6px}
-.mn .nv button{height:40px;min-width:40px;border-radius:20px;border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:18px;padding:0 12px;font-weight:700}
+.mn .nv button{white-space:nowrap;height:40px;min-width:40px;border-radius:20px;border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:18px;padding:0 12px;font-weight:700}
 /* 오늘 카드 */
 .hero{margin:6px 16px 12px;border-radius:22px;padding:18px 18px 16px;color:#fff;background:linear-gradient(135deg,#7a2e1b,#a2492f 60%,#b8894a);box-shadow:0 8px 24px rgba(122,46,27,.25)}
 .hero .lb{font-size:15px;opacity:.85}
@@ -295,7 +295,8 @@ function vWeek() {
   var days = [], mx = 1;
   for (var i = 0; i < 7; i++) { var ds = add(wkStart, i), l = rowsOn(ds); days.push([ds, l]); mx = Math.max(mx, sum(l.filter(live))); }
   var L = [].concat.apply([], days.map(function (d) { return d[1].filter(live); }));
-  var h = '<div class="mn"><h2>' + (+wkStart.slice(5, 7)) + '월 ' + (+wkStart.slice(8)) + '일 주<small>' + L.length + '팀 ' + sum(L) + '명</small></h2>' +
+  var we = add(wkStart, 6);
+  var h = '<div class="mn"><h2 style="font-size:22px">' + (+wkStart.slice(5, 7)) + '/' + (+wkStart.slice(8)) + ' ~ ' + (+we.slice(5, 7)) + '/' + (+we.slice(8)) + '<small style="display:block;margin:2px 0 0">' + L.length + '팀 · ' + sum(L) + '명</small></h2>' +
     '<div class="nv"><button onclick="wkGo(-7)">‹</button><button onclick="wkGo(0)">이번 주</button><button onclick="wkGo(7)">›</button></div></div>';
   days.forEach(function (d) {
     var ds = d[0], l = d[1], LL = l.filter(live), w = dow(ds);
@@ -388,7 +389,10 @@ function vStats() {
   if (best && best[1]) h += '<div class="st" onclick="openDay(\'' + best[0] + '\')"><h4>가장 바쁜 날</h4><div class="bg" style="font-size:24px">' + lbl(best[0]) + '</div><div style="color:var(--muted)">' + L.filter(function (r) { return r.date === best[0]; }).length + '팀 · ' + best[1] + '명 ›</div></div>';
   // 단골 TOP 5
   var g = {};
-  L.forEach(function (r) { var key = (r.pk ? r.pk : "") + "|" + r.name.replace(/\s/g, ""); if (/^\|?(이름 확인 필요|네이버 손님)?$/.test(key)) return; (g[key] = g[key] || { n: r.name, c: 0, p: 0, pk: r.pk }).c++; g[key].p += r.people; });
+  L.forEach(function (r) {
+    // 네이버는 이름 가운데가 가려져(김*수) 다른 사람이 섞이므로 전화번호가 없으면 빼고 셈
+    if (!r.pk && (/\*/.test(r.name) || r.name === "이름 확인 필요" || r.name === "네이버 손님")) return;
+    var key = (r.pk ? r.pk : "") + "|" + r.name.replace(/\s/g, ""); (g[key] = g[key] || { n: r.name, c: 0, p: 0, pk: r.pk }).c++; g[key].p += r.people; });
   var top = Object.keys(g).map(function (k) { return g[k]; }).filter(function (x) { return x.c >= 2; }).sort(function (a, b) { return b.c - a.c || b.p - a.p; }).slice(0, 5);
   h += '<div class="st"><h4>이번 달 단골 TOP 5 <span style="font-weight:400">(2번 이상)</span></h4>' + (top.length ? top.map(function (x, i) {
     return '<div class="reg"><div class="rk">' + (i + 1) + '</div><div class="nm">' + esc(x.n) + (x.pk ? ' <span style="color:var(--muted);font-weight:400">…' + x.pk + '</span>' : '') + '</div><div><b>' + x.c + '번</b> <span style="color:var(--muted)">' + x.p + '명</span></div></div>';
