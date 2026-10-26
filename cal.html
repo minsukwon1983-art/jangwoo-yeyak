@@ -47,6 +47,7 @@ body{padding:env(safe-area-inset-top) 0 calc(86px + env(safe-area-inset-bottom))
 .chip.n{background:var(--dinner);border-color:var(--dinnerbar)}
 .chip.x{background:#f2f2f2;border-color:#ccc;color:#aaa;text-decoration:line-through}
 .chip .w{color:var(--warn);font-weight:800}
+@media (max-width:600px){.chip .tm{display:none}.chip{font-size:11px;padding:3px 2px 3px 4px;text-overflow:clip}.cell{min-height:104px}}
 .more{font-size:11px;color:var(--muted);text-align:center;margin-top:2px}
 .cnt{font-size:10.5px;color:var(--muted);text-align:center;margin-top:1px}
 .sheet{padding:14px 16px 10px;border-top:8px solid #f4f1ed;margin-top:6px}
@@ -158,7 +159,9 @@ function drawCal() {
     var show = list.slice(0, 4);
     show.forEach(function (r) {
       var c = !live(r) ? "x" : (r.meal === "점심" ? "l" : "n");
-      h += '<div class="chip ' + c + '">' + (r.check.indexOf("⚠") === 0 && live(r) ? '<span class="w">!</span>' : "") + r.time + " " + esc(r.name) + '</div>';
+      // 휴대폰은 칸이 좁아서 이름만 (점심=노랑, 저녁=보라로 시간대 구분), 넓은 화면은 시간도
+      h += '<div class="chip ' + c + '">' + (r.check.indexOf("⚠") === 0 && live(r) ? '<span class="w">!</span>' : "") +
+        '<span class="tm">' + r.time + ' </span>' + esc(String(r.name).replace(/\\/g, "")) + '</div>';
     });
     if (list.length > 4) h += '<div class="more">+' + (list.length - 4) + '</div>';
     if (L.length) h += '<div class="cnt">' + L.length + '팀 ' + L.reduce(function (s, r) { return s + r.people; }, 0) + '명</div>';
@@ -179,7 +182,7 @@ function dayList(ds, list) {
   list.forEach(function (r) {
     var x = !live(r);
     h += '<div class="item' + (x ? " x" : "") + '"><div class="t">' + r.time + '</div><div class="b">' +
-      '<div class="nm">' + esc(r.name) + ' <span style="font-weight:600">' + r.people + '명</span>' +
+      '<div class="nm">' + esc(String(r.name).replace(/\\/g, "")) + ' <span style="font-weight:600">' + r.people + '명</span>' +
       (x ? '<span class="tag">' + esc(r.status) + '</span>' : '') +
       (!x && r.check.indexOf("⚠") === 0 ? '<span class="tag w">' + esc(r.check) + '</span>' : '') + '</div>' +
       '<div class="meta">' + esc(shortRoom(r.rooms) || "룸 미정") + ' · ' + esc(r.source || "-") + '</div>' +
