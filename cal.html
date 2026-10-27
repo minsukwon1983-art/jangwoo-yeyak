@@ -25,6 +25,7 @@
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;font-size:17px}
 body{padding:env(safe-area-inset-top) 0 calc(96px + env(safe-area-inset-bottom))}
 button{font-family:inherit}
+[hidden]{display:none!important}
 .wrap{max-width:720px;margin:0 auto}
 /* 머리 */
 .hd{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}
@@ -136,6 +137,10 @@ button{font-family:inherit}
 .tb button{border:0;background:none;font-size:13px;font-weight:700;color:var(--muted);padding:7px 14px;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:62px}
 .tb button .i{font-size:21px}
 .tb button.on{background:#f3ece2;color:var(--brand)}
+/* 넷리파이 주소에서는 오른쪽 아래 "Powered by Netlify" 표시가 있어 탭을 그 위로 올림 */
+body.nl{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+body.nl .tb{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+body.nl .fab{bottom:calc(150px + env(safe-area-inset-bottom))}
 .fab{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:29px;background:var(--brand);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 18px rgba(122,46,27,.4);z-index:11}
 .msg{padding:40px 24px;font-size:18px;line-height:1.6;text-align:center;color:var(--muted)}
 /* 로그인 (링크 열쇠 없이 열었을 때) */
@@ -212,6 +217,7 @@ function auth() {
   return ensureToken().then(function (ok) { if (!ok) throw new Error("login"); return "&token=" + encodeURIComponent(idToken); });
 }
 function showLogin(err) {
+  document.querySelector(".tb").hidden = true;
   app.innerHTML = '<div class="login"><img src="logo-180.png" alt=""><h2>장우가든 예약</h2>' +
     '<input id="em" type="email" placeholder="이메일 (발주 앱 본사 계정)" autocomplete="username">' +
     '<input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password">' +
@@ -231,6 +237,7 @@ function authFail(e) {
 }
 
 var app = document.getElementById("app");
+if (/netlify.app$/.test(location.hostname)) document.body.classList.add("nl");
 var tab = "today", cache = {}, loading = {}, upd = null;
 function kst() { return new Date(Date.now() + 9 * 3600e3); }
 function todayStr() { return kst().toISOString().slice(0, 10); }
@@ -291,6 +298,7 @@ function draw() {
   if (tab === "month") h += vMonth();
   if (tab === "stats") h += vStats();
   if (upd) h += '<div class="upd">' + upd.toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) + ' 기준 · 앱을 열 때마다 새로 불러와요</div>';
+  document.querySelector(".tb").hidden = false;
   app.innerHTML = h;
 }
 
