@@ -138,6 +138,13 @@ button{font-family:inherit}
 .tb button.on{background:#f3ece2;color:var(--brand)}
 .fab{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:29px;background:var(--brand);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 18px rgba(122,46,27,.4);z-index:11}
 .msg{padding:40px 24px;font-size:18px;line-height:1.6;text-align:center;color:var(--muted)}
+/* 로그인 (링크 열쇠 없이 열었을 때) */
+.login{min-height:80vh;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 20px}
+.login img{width:96px;height:96px;border-radius:24px;margin:0 auto}
+.login h2{text-align:center;font-size:24px;margin:4px 0 8px;color:var(--brand)}
+.login input{width:100%;padding:16px;border:1.5px solid var(--line);border-radius:14px;font-size:18px;background:#fff;color:var(--ink)}
+.login button{padding:16px;border:0;border-radius:14px;background:var(--brand);color:#fff;font-size:19px;font-weight:700}
+.login .err{color:var(--warn);font-size:15px;text-align:center;min-height:20px}
 .upd{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 10px}
 .spin{display:inline-block;width:18px;height:18px;border:3px solid #e6dccd;border-top-color:var(--brand);border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px}
 @keyframes s{to{transform:rotate(360deg)}}
@@ -175,6 +182,54 @@ var q = new URLSearchParams(location.search), K = q.get("k") || "", V = q.get("v
 try { if (K || V) { localStorage.setItem("jc_k", K); localStorage.setItem("jc_v", V); } else { K = localStorage.getItem("jc_k") || ""; V = localStorage.getItem("jc_v") || ""; } } catch (e) {}
 try { if (K && localStorage.getItem("jw_k")) document.getElementById("fab").style.display = "flex"; } catch (e) {}
 
+/* ---------- 로그인 (링크 열쇠가 없을 때: 예전 "장우가든 예약" 앱처럼 발주 앱 본사 계정으로) ---------- */
+var FIREBASE_API_KEY = "AIzaSyD1gPJ1VR0EEEDbi8drWSp5Zew9c2gvTo4";   // 파이어베이스 웹 키 (공개용, 비밀 아님)
+var idToken = null, tokenExp = 0;
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function signIn(em, pw) {
+  if (em.indexOf("@") < 0) em += "@jangwoo-store.app";
+  return fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + FIREBASE_API_KEY, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em, password: pw, returnSecureToken: true })
+  }).then(function (r) { return r.json().then(function (j) {
+    if (!r.ok) throw new Error("bad");
+    idToken = j.idToken; tokenExp = Date.now() + (Number(j.expiresIn) - 60) * 1000; ls("jw_refresh", j.refreshToken);
+  }); });
+}
+function ensureToken() {
+  if (idToken && Date.now() < tokenExp) return Promise.resolve(true);
+  var rt = ls("jw_refresh"); if (!rt) return Promise.resolve(false);
+  return fetch("https://securetoken.googleapis.com/v1/token?key=" + FIREBASE_API_KEY, {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(rt)
+  }).then(function (r) {
+    if (!r.ok) { ls("jw_refresh", null); return false; }
+    return r.json().then(function (j) { idToken = j.id_token; tokenExp = Date.now() + (Number(j.expires_in) - 60) * 1000; ls("jw_refresh", j.refresh_token); return true; });
+  });
+}
+// 서버에 붙일 열쇠: 링크 열쇠(k/v) 또는 로그인 표(token)
+function auth() {
+  if (K) return Promise.resolve("&k=" + encodeURIComponent(K));
+  if (V) return Promise.resolve("&v=" + encodeURIComponent(V));
+  return ensureToken().then(function (ok) { if (!ok) throw new Error("login"); return "&token=" + encodeURIComponent(idToken); });
+}
+function showLogin(err) {
+  app.innerHTML = '<div class="login"><img src="logo-180.png" alt=""><h2>장우가든 예약</h2>' +
+    '<input id="em" type="email" placeholder="이메일 (발주 앱 본사 계정)" autocomplete="username">' +
+    '<input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password">' +
+    '<button id="lg">들어가기</button><div class="err">' + (err || "") + '</div></div>';
+  document.getElementById("lg").onclick = function () {
+    var em = document.getElementById("em").value.trim(), pw = document.getElementById("pw").value;
+    if (!em || !pw) return showLogin("이메일과 비밀번호를 넣어 주세요.");
+    this.disabled = true; this.textContent = "들어가는 중…";
+    signIn(em, pw).then(function () { go(true); }, function () { showLogin("로그인이 안 됐어요. 이메일·비밀번호를 확인해 주세요."); });
+  };
+}
+function authFail(e) {
+  var m = String(e && e.message);
+  if (m === "login") { ls("jw_refresh", null); idToken = null; showLogin(); return true; }
+  if (m === "denied") { ls("jw_refresh", null); idToken = null; showLogin("이 계정은 예약을 볼 수 없어요."); return true; }
+  return false;
+}
+
 var app = document.getElementById("app");
 var tab = "today", cache = {}, loading = {}, upd = null;
 function kst() { return new Date(Date.now() + 9 * 3600e3); }
@@ -200,7 +255,7 @@ function mins(t) { var p = String(t).split(":"); return (+p[0]) * 60 + (+p[1] ||
 function fetchMonth(m, force) {
   if (cache[m] && !force) return Promise.resolve(cache[m]);
   if (loading[m]) return loading[m];
-  loading[m] = fetch(API + "?p=cal&m=" + m + (K ? "&k=" + encodeURIComponent(K) : "&v=" + encodeURIComponent(V)))
+  loading[m] = auth().then(function (a) { return fetch(API + "?p=cal&m=" + m + a); })
     .then(function (r) { return r.json(); })
     .then(function (j) {
       delete loading[m];
@@ -214,7 +269,7 @@ function need(months, force) { return Promise.all(months.map(function (m) { retu
 function rowsOn(ds) { return (cache[ym(ds)] || []).filter(function (r) { return r.date === ds; }); }
 
 function go(force) {
-  if (!K && !V) { app.innerHTML = '<div class="msg">링크가 맞지 않아요.<br>자비스에게 받은 본인 링크로 다시 열어 주세요.</div>'; return; }
+  if (!K && !V && !ls("jw_refresh") && !idToken) { showLogin(); return; }
   var ms = [];
   if (tab === "today") ms = [ym(todayStr()), ym(add(todayStr(), 1))];
   if (tab === "week") ms = [ym(wkStart), ym(add(wkStart, 6))];
@@ -225,6 +280,7 @@ function go(force) {
   if (!ready) app.innerHTML = head() + '<div class="msg"><span class="spin"></span> 불러오는 중…</div>';
   else draw();
   need(ms, force).then(draw).catch(function (e) {
+    if (authFail(e)) return;
     app.innerHTML = head() + '<div class="msg">' + (String(e.message) === "key" ? "링크가 맞지 않아요. 자비스에게 받은 링크로 열어 주세요." : "인터넷을 확인하고 다시 열어 주세요.") + '</div>';
   });
 }
@@ -402,14 +458,14 @@ function vStats() {
 
 /* ---------- 검색 ---------- */
 var sTimer = null;
-function openSearch() { document.getElementById("srch").hidden = false; var i = document.getElementById("sq"); i.value = ""; setTimeout(function () { i.focus(); }, 50); document.getElementById("sr").innerHTML = '<div class="hint">' + (K ? "예: 김철수, 5678 (전화번호 뒤 4자리)" : "예: 김철수") + '</div>'; }
+function openSearch() { document.getElementById("srch").hidden = false; var i = document.getElementById("sq"); i.value = ""; setTimeout(function () { i.focus(); }, 50); document.getElementById("sr").innerHTML = '<div class="hint">' + (!V || K ? "예: 김철수, 5678 (전화번호 뒤 4자리)" : "예: 김철수") + '</div>'; }
 document.getElementById("sx").onclick = function () { document.getElementById("srch").hidden = true; };
 document.getElementById("sq").oninput = function () {
   var v = this.value.trim(); clearTimeout(sTimer);
   if (v.length < 2) { document.getElementById("sr").innerHTML = '<div class="hint">두 글자 이상 써 주세요</div>'; return; }
   sTimer = setTimeout(function () {
     document.getElementById("sr").innerHTML = '<div class="hint"><span class="spin"></span> 찾는 중…</div>';
-    fetch(API + "?p=cal&q=" + encodeURIComponent(v) + (K ? "&k=" + encodeURIComponent(K) : "&v=" + encodeURIComponent(V)))
+    auth().then(function (a) { return fetch(API + "?p=cal&q=" + encodeURIComponent(v) + a); })
       .then(function (r) { return r.json(); }).then(function (j) {
         if (!j.ok) throw 0;
         var L = j.rows.filter(live);
