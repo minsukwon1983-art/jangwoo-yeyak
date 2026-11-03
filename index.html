@@ -26,12 +26,15 @@ body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sa
 .top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .top img{width:56px;height:56px;border-radius:14px}
 h1{font-size:28px;margin:0;color:#7a2e1b}.who{font-size:16px;color:#6b5a48}
-textarea{width:100%;height:40vh;min-height:200px;font-size:20px;line-height:1.5;padding:14px;border:2px solid #c9b79c;border-radius:14px;background:#fff;color:#2b2118;-webkit-appearance:none}
+textarea{width:100%;height:24vh;min-height:130px;font-size:20px;line-height:1.5;padding:14px;border:2px solid #c9b79c;border-radius:14px;background:#fff;color:#2b2118;-webkit-appearance:none}
 button{width:100%;font-size:24px;font-weight:700;padding:18px;border:0;border-radius:14px;background:#7a2e1b;color:#fff;margin-top:12px;-webkit-appearance:none}
 button:disabled{opacity:.5}
 button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 12px;font-size:21px;padding:16px}
-.msg{font-size:20px;margin-top:14px;white-space:pre-line;min-height:1.5em}
-.ex{font-size:16px;color:#6b5a48;margin-top:18px;line-height:1.7;background:#fffaf2;border-radius:12px;padding:12px 14px}
+.msg{font-size:20px;margin-top:14px;min-height:1.5em;line-height:1.5}
+.card{white-space:pre-line;background:#fff;border:2px solid #d9cdb8;border-left-width:8px;border-radius:12px;padding:12px 14px;margin-bottom:10px;word-break:keep-all}
+.card.ok{border-color:#2f8f5b}.card.warn{border-color:#d9822b;background:#fff6e9;font-weight:600}.card.bad2{border-color:#c0392b;background:#fdecea;font-weight:600}
+.ex{font-size:17px;color:#6b5a48;margin-top:18px;line-height:1.7;background:#fffaf2;border-radius:12px;padding:12px 14px}
+.ex summary{font-weight:700;color:#2b2118;font-size:18px;padding:4px 0}
 .ex b{color:#2b2118}
 .bad{font-size:20px;padding:24px;line-height:1.6}
 .voice{display:flex;align-items:center;gap:10px;font-size:18px;color:#6b5a48;margin-top:12px}
@@ -49,7 +52,7 @@ button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 1
   <button id="b">보내기</button>
   <label class="voice"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
   <div class="msg" id="m"></div>
-  <div class="ex"><b>이렇게 보내세요</b><br>
+  <details class="ex"><summary>이렇게 보내세요 (눌러서 보기)</summary>
   · 새 예약: "26일 저녁 7시 김철수 6명 공일공 1234 5678"<br>
   · 룸 바꾸기: "25일 김철수님 5번룸으로 바꿔 줘"<br>
   · 시간·인원: "25일 김철수님 8명, 7시로"<br>
@@ -61,7 +64,7 @@ button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 1
   · 📦 택배: "오늘 택배 들어온 거 있어?", "오늘 몇 박스 보내야 돼?"<br>
   · 💬 아무거나: "자비스, 고기 600g이면 몇 인분이야?"<br>
   · 📝 부탁: "자사몰 LA갈비 품절 풀어 줘" → 자비스 본부에 할 일로 넘어가요<br>
-  → 예약은 자비스가 <b>바로</b> 장부에 넣고 4명에게 카톡을 보냅니다. 대답은 보내기 버튼 아래에 떠요.</div>
+  → 예약은 자비스가 <b>바로</b> 장부에 넣고 4명에게 카톡을 보냅니다. 대답은 보내기 버튼 아래에 떠요.</details>
 </div>
 <script>
 var URL_ = "https://script.google.com/macros/s/AKfycbwPOkSzu48JYIuWm_2B0cKNOdfr_rwQ3VTt1shG05Ew1wMB92dqQj2maYzbq36Mw0-_/exec";
@@ -85,6 +88,22 @@ if (!K) {
     s = s.replace(/[\u2600-\u27BF]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|\uFE0F/g, "").replace(/\n+/g, ". ").slice(0, 400);
     var u = new SpeechSynthesisUtterance(s); u.lang = "ko-KR"; u.rate = 1.05; tts.cancel(); tts.speak(u);
   }
+  // 대답을 카드로: ✅ 초록, ⚠ 주황, ❌ 빨강. 새 줄이 ✅·⚠로 시작하면 카드를 나눈다. 대답이 바로 보이게 스크롤
+  function show(r) {
+    m.textContent = "";
+    var cards = [];
+    String(r).split("\n").forEach(function (l) {
+      if (!l.trim()) { cards.push(null); return; }
+      var last = cards[cards.length - 1];
+      if (last && !/^(✅|⚠|❌|📋|📦|💬|📝)/.test(l)) cards[cards.length - 1] = last + "\n" + l; else cards.push(l);
+    });
+    cards.filter(Boolean).forEach(function (c) {
+      var d = document.createElement("div");
+      d.className = "card" + (/^✅/.test(c) ? " ok" : /^⚠/.test(c) ? " warn" : /^❌/.test(c) ? " bad2" : "");
+      d.textContent = c; m.appendChild(d);
+    });
+    m.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   function busy(on) { b.disabled = p.disabled = ph.disabled = on; b.textContent = on ? "보내는 중…" : "보내기"; }
   function send(images) {
     images = images || [];
@@ -92,7 +111,7 @@ if (!K) {
     wake(); busy(true); m.textContent = "자비스가 읽고 있어요… (" + (images.length ? "20~30초" : "10초쯤") + ")";
     fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: t.value, images: images }) })
       .then(function (r) { return r.text(); })
-      .then(function (r) { m.textContent = r; say(r); if (/^(✅|📋|📦|💬|📝)/.test(r)) t.value = ""; })
+      .then(function (r) { show(r); say(r); if (/^(✅|📋|📦|💬|📝)/.test(r) && r.indexOf("⚠") < 0) t.value = ""; })
       .catch(function () { m.textContent = "❌ 못 보냈어요. 인터넷을 확인하고 다시 눌러 주세요."; })
       .then(function () { busy(false); });
   }
