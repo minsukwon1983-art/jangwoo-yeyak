@@ -154,6 +154,22 @@ body.nl .fab{bottom:calc(150px + env(safe-area-inset-bottom))}
 .spin{display:inline-block;width:18px;height:18px;border:3px solid #e6dccd;border-top-color:var(--brand);border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px}
 @keyframes s{to{transform:rotate(360deg)}}
 @media (min-width:700px){.cl{aspect-ratio:1/0.9}.cl .c{font-size:20px}}
+/* 💰 마진 (임원만) */
+.mgt{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 12px}.mgt.in{padding:6px 0 10px}
+.mgt button{border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);border-radius:18px;padding:8px 14px;font-size:15px;font-weight:700;color:var(--ink)}
+.mgt button.on{background:var(--brand);color:#fff}
+.sec.mg{padding:6px 14px 12px}.sec.mg h3 span{font-weight:800;color:var(--brand)}
+.mgbig{font-size:36px;font-weight:800;letter-spacing:-1px;color:var(--brand);margin:4px 0 2px}.mgbig.pos{color:var(--ok)}.mgbig.neg{color:var(--warn)}
+.mgsm{font-size:14px;color:var(--muted);line-height:1.5}
+.mgr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:16px}
+.mgi{display:flex;align-items:center;gap:4px}.mgi input{width:120px;font:inherit;font-weight:800;text-align:right;border:1px solid var(--line);border-radius:10px;padding:7px 9px;background:var(--bg);color:var(--ink)}
+.mgi em{font-style:normal;font-size:14px;color:var(--muted);min-width:28px}
+.mgck{display:flex;align-items:center;gap:8px;font-size:15px;padding:8px 0;border-top:1px solid var(--line)}
+.mgx{overflow-x:auto}.mgx table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+.mgx th,.mgx td{padding:7px 4px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}.mgx th{font-size:13px;color:var(--muted);font-weight:600}
+.mgx th:first-child,.mgx td:first-child{text-align:left}.mgx td.pos{color:var(--ok);font-weight:800}.mgx td.neg{color:var(--warn);font-weight:800}.mgx tr.now td{background:#fbf1e3}
+.mgm input{width:74px;font:inherit;font-size:15px;font-weight:700;text-align:right;border:1px solid var(--line);border-radius:8px;padding:5px 6px;background:var(--bg);color:var(--ink)}
+.mgm small{margin-left:3px;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -164,6 +180,7 @@ body.nl .fab{bottom:calc(150px + env(safe-area-inset-bottom))}
   <button data-t="week"><span class="i">🗓️</span>이번 주</button>
   <button data-t="month"><span class="i">📅</span>달력</button>
   <button data-t="stats"><span class="i">📊</span>통계</button>
+  <button data-t="margin" id="tbm" hidden><span class="i">💰</span>마진</button>
 </nav></div>
 <div class="srch" id="srch" hidden>
   <div class="bx"><button class="ib" id="sx">←</button><input id="sq" type="search" placeholder="이름 또는 전화번호 뒤 4자리" enterkeyhint="search"></div>
@@ -186,6 +203,7 @@ var HOL = {
 var q = new URLSearchParams(location.search), K = q.get("k") || "", V = q.get("v") || "";
 try { if (K || V) { localStorage.setItem("jc_k", K); localStorage.setItem("jc_v", V); } else { K = localStorage.getItem("jc_k") || ""; V = localStorage.getItem("jc_v") || ""; } } catch (e) {}
 try { if (K && localStorage.getItem("jw_k")) document.getElementById("fab").style.display = "flex"; } catch (e) {}
+if (!(V && !K)) document.getElementById("tbm").hidden = false;   // 💰 마진 탭은 임원 링크·본사 로그인만 (직원용 링크엔 안 보임)
 
 /* ---------- 로그인 (링크 열쇠가 없을 때: 예전 "장우가든 예약" 앱처럼 발주 앱 본사 계정으로) ---------- */
 var FIREBASE_API_KEY = "AIzaSyD1gPJ1VR0EEEDbi8drWSp5Zew9c2gvTo4";   // 파이어베이스 웹 키 (공개용, 비밀 아님)
@@ -277,6 +295,7 @@ function rowsOn(ds) { return (cache[ym(ds)] || []).filter(function (r) { return 
 
 function go(force) {
   if (!K && !V && !ls("jw_refresh") && !idToken) { showLogin(); return; }
+  if (tab === "margin") { marginOpen(); return; }
   var ms = [];
   if (tab === "today") ms = [ym(todayStr()), ym(add(todayStr(), 1))];
   if (tab === "week") ms = [ym(wkStart), ym(add(wkStart, 6))];
@@ -504,6 +523,149 @@ document.addEventListener("touchend", function (e) {
 document.addEventListener("visibilitychange", function () { if (!document.hidden) { cache = {}; go(true); } });
 setInterval(function () { if (!document.hidden && tab === "today") draw(); }, 60000);   // "몇 분 뒤" 새로 계산
 go();
+</script>
+<script>
+/* ---------- 💰 마진 계산기 (임원만, 2026-11-07) ----------
+   원가·양념 레시피 숫자는 이 공개 코드에 넣지 않는다. 회사 구글(?p=margin)에서 임원 열쇠로만 불러오고,
+   고치면 회사 구글에 저장해 가족 모두에게 똑같이 보인다. 비용 = 사는 값 ÷ 사는 양 × 한 번 쓰는 양 */
+var MG = null, MG_SAVED = "", mgTimer = null, mgState = "";
+var MG_P = { handon: "한돈양념구이", bulgogi: "소불고기", la: "LA갈비" };
+var MG_C = { mall: "자사몰", naver: "네이버", kakao: "카카오 선물하기", group: "공구 (셀러)" };
+var mgUi = { prod: "handon", ch: "naver", packs: 2, monthly: 100, vat: true };
+try { var mu = JSON.parse(localStorage.getItem("jc_mg_ui")); if (mu && mu.prod) mgUi = mu; } catch (e) {}
+var MG_FIELDS = [["meatPrice", "고기 1kg 시세", "원"], ["meatKg", "한 번에 쓰는 고기", "kg"], ["ratio", "팩 속 고기 비율", "%"], ["packG", "한 팩 무게", "g"],
+  ["loss", "손실", "%"], ["people", "일하는 사람", "명"], ["hours", "한 번 만드는 시간", "시간"], ["wage", "시급", "원"], ["overhead", "전기·가스·임대 (한 번)", "원"]];
+
+function mgWon(n) { return (n < 0 ? "-" : "") + Math.round(Math.abs(n)).toLocaleString("ko-KR") + "원"; }
+function mgNum(v) { var n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return isFinite(n) ? n : 0; }
+function mgSauce(r) { return r[2] ? r[1] / r[2] * r[4] : 0; }
+function mgSums() {
+  var s = 0, w = 0, b = 0;
+  MG.m.sauce.forEach(function (r) { s += mgSauce(r); });
+  MG.m.wrap.forEach(function (r) { w += r[1] * r[2]; });
+  MG.m.box.forEach(function (r) { b += r[1] * r[2]; });
+  return { sauce: s, wrap: w, box: b };
+}
+function mgCost(p) {
+  var t = mgSums(), packs = Math.floor(p.meatKg / (p.ratio / 100) / (p.packG / 1000) * (1 - p.loss / 100));
+  var meat = p.meatKg * p.meatPrice, labor = p.people * p.hours * p.wage, batch = meat + t.sauce + labor + p.overhead;
+  return { packs: packs, cost: packs > 0 ? batch / packs + t.wrap : 0, box: t.box, meat: packs > 0 ? meat / packs : 0, sauce: packs > 0 ? t.sauce / packs : 0 };
+}
+function mgProfit(price, chk, packs, pc, supply) {
+  var c = MG.c[chk], rev = chk === "group" ? supply * packs : price;
+  var vat = mgUi.vat ? rev / 11 : 0, fee = rev * c.fee / 100, goods = pc.cost * packs;
+  var pr = rev - vat - fee - goods - c.ship - pc.box;
+  return { rev: rev, vat: vat, fee: fee, goods: goods, ship: c.ship, box: pc.box, profit: pr, ratio: rev ? pr / rev : 0 };
+}
+
+function marginOpen() {
+  document.querySelector(".tb").hidden = false;
+  if (MG) { mgDraw(); return; }
+  app.innerHTML = head() + '<div class="msg"><span class="spin"></span> 불러오는 중…</div>';
+  auth().then(function (a) { return fetch(API + "?p=margin" + a); }).then(function (r) { return r.json(); }).then(function (j) {
+    if (!j.ok) throw new Error(j.error || "server");
+    if (!j.data) throw new Error("empty");
+    MG = j.data; MG_SAVED = j.saved || ""; if (tab === "margin") mgDraw();
+  }).catch(function (e) {
+    if (authFail(e)) return;
+    var m = String(e && e.message);
+    app.innerHTML = head() + '<div class="msg">' + (m === "key" ? "마진은 임원 링크로만 볼 수 있어요." : m === "empty" ? "아직 원가 자료가 없어요. 자비스에게 말해 주세요." : "인터넷을 확인하고 다시 열어 주세요.") + '</div>';
+  });
+}
+function mgIn(id, v, unit, label) {
+  return '<label class="mgr"><span>' + label + '</span><span class="mgi"><input id="' + id + '" inputmode="decimal" value="' + Math.round(v * 1000) / 1000 + '"><em>' + unit + '</em></span></label>';
+}
+function mgDraw() {
+  var p = MG.p[mgUi.prod], ch = mgUi.ch, h = head();
+  h += '<div class="mgt">' + Object.keys(MG_P).map(function (k) { return '<button data-mgp="' + k + '" class="' + (mgUi.prod === k ? "on" : "") + '">' + MG_P[k] + '</button>'; }).join("") + '</div>';
+  h += '<div class="sec mg"><h3><b>한 팩 원가</b></h3><div class="mgbig" id="mgCost"></div><div class="mgsm" id="mgCostNote"></div></div>';
+  h += '<div class="sec mg"><h3><b>주문 한 건에 남는 돈</b></h3><div class="mgt in">' + Object.keys(MG_C).map(function (k) { return '<button data-mgc="' + k + '" class="' + (ch === k ? "on" : "") + '">' + MG_C[k] + '</button>'; }).join("") + '</div>';
+  h += mgIn("mg-packs", mgUi.packs, "팩", "주문 한 건 팩 수");
+  h += ch === "group" ? mgIn("mg-supply", p.supply, "원", "셀러에게 넘기는 값 (한 팩)") : mgIn("mg-price", (MG.price[mgUi.prod] || {})[mgUi.packs] || 0, "원", "손님이 내는 값 (" + mgUi.packs + "팩)");
+  h += mgIn("mg-fee", MG.c[ch].fee, "%", "판매 수수료") + mgIn("mg-ship", MG.c[ch].ship, "원", "택배비 (한 건)") + mgIn("mg-monthly", mgUi.monthly, "건", "한 달 주문 수");
+  h += '<label class="mgck"><input type="checkbox" id="mg-vat"' + (mgUi.vat ? " checked" : "") + '> 부가세 10% 빼고 보기</label>';
+  h += '<div class="mgbig" id="mgProfit"></div><div class="mgsm" id="mgProfitNote"></div></div>';
+  h += '<div class="sec mg"><h3><b>값·판매처별 비교</b><span>' + mgUi.packs + '팩</span></h3><div class="mgx"><table id="mgCmp"></table></div></div>';
+  h += '<div class="sec mg"><h3><b>' + MG_P[mgUi.prod] + ' 만들 때</b></h3>' + MG_FIELDS.map(function (f) { return mgIn("mgf-" + f[0], p[f[0]], f[2], f[0] === "meatPrice" ? p.meatName + " 1kg 시세" : f[1]); }).join("") + '</div>';
+  h += '<div class="sec mg"><h3><b>양념 재료 시세</b><span id="mgSauceSum"></span></h3><div class="mgsm">사는 값 ÷ 사는 양 × 한 번 쓰는 양. 세 상품 같은 양념</div><div class="mgx"><table class="mgm"><tr><th>재료</th><th>사는 값</th><th>사는 양</th><th>쓰는 양</th><th>비용</th></tr>';
+  MG.m.sauce.forEach(function (r, i) {
+    h += '<tr><td>' + esc(r[0]) + '</td><td><input id="mgs-' + i + '-1" inputmode="decimal" value="' + r[1] + '"></td><td><input id="mgs-' + i + '-2" inputmode="decimal" value="' + r[2] + '"><small>' + esc(r[3]) + '</small></td><td><input id="mgs-' + i + '-4" inputmode="decimal" value="' + r[4] + '"></td><td id="mgsc-' + i + '"></td></tr>';
+  });
+  h += '</table></div></div>';
+  [["wrap", "팩 포장재 (한 팩마다)"], ["box", "택배 포장 (한 건마다)"]].forEach(function (x) {
+    h += '<div class="sec mg"><h3><b>' + x[1] + '</b><span id="mg' + x[0] + 'Sum"></span></h3><div class="mgx"><table class="mgm"><tr><th>재료</th><th>한 개 값</th><th>개수</th><th>비용</th></tr>';
+    MG.m[x[0]].forEach(function (r, i) {
+      h += '<tr><td>' + esc(r[0]) + '</td><td><input id="mg' + x[0] + '-' + i + '-1" inputmode="decimal" value="' + r[1] + '"></td><td><input id="mg' + x[0] + '-' + i + '-2" inputmode="decimal" value="' + r[2] + '"></td><td id="mg' + x[0] + 'c-' + i + '"></td></tr>';
+    });
+    h += '</table></div></div>';
+  });
+  h += '<div class="upd" id="mgSave"></div>';
+  app.innerHTML = h;
+  mgCalc();
+}
+function mgCalc() {
+  var p = MG.p[mgUi.prod], pc = mgCost(p), t = mgSums(), price = (MG.price[mgUi.prod] || {})[mgUi.packs] || 0;
+  var set = function (id, v) { var e = document.getElementById(id); if (e) e.innerHTML = v; };
+  set("mgCost", mgWon(pc.cost));
+  set("mgCostNote", "고기 " + mgWon(pc.meat) + " · 양념 " + mgWon(pc.sauce) + " · 팩 포장 " + mgWon(t.wrap) + "<br>고기 " + p.meatKg + "kg으로 " + p.packG + "g 팩 " + pc.packs + "개 (손실 " + p.loss + "% 뺌)");
+  var r = mgProfit(price, mgUi.ch, mgUi.packs, pc, p.supply);
+  var pe = document.getElementById("mgProfit"); if (pe) { pe.textContent = mgWon(r.profit); pe.className = "mgbig " + (r.profit >= 0 ? "pos" : "neg"); }
+  set("mgProfitNote", "남는 비율 " + Math.round(r.ratio * 100) + "% · 한 팩 " + mgWon(r.profit / mgUi.packs) + " · 한 달 " + mgWon(r.profit * mgUi.monthly) +
+    "<br>받는 돈 " + mgWon(r.rev) + " − 부가세 " + mgWon(r.vat) + " − 수수료 " + mgWon(r.fee) + " − 물건 " + mgWon(r.goods) + " − 택배 " + mgWon(r.ship) + " − 택배 포장 " + mgWon(r.box));
+  var cands = (((MG.cands || {})[mgUi.prod] || {})[mgUi.packs] || []).slice();
+  if (cands.indexOf(price) < 0) cands.push(price);
+  cands.sort(function (a, b) { return a - b; });
+  var tb = "<tr><th>값</th><th>자사몰</th><th>네이버</th><th>카카오</th></tr>";
+  cands.forEach(function (v) {
+    tb += '<tr class="' + (v === price ? "now" : "") + '"><td>' + mgWon(v) + "</td>" + ["mall", "naver", "kakao"].map(function (k) {
+      var x = mgProfit(v, k, mgUi.packs, pc, p.supply); return '<td class="' + (x.profit >= 0 ? "pos" : "neg") + '">' + mgWon(x.profit) + "</td>"; }).join("") + "</tr>";
+  });
+  var g = mgProfit(0, "group", mgUi.packs, pc, p.supply);
+  tb += '<tr><td>공구 ' + mgWon(p.supply) + '/팩</td><td colspan="3" class="' + (g.profit >= 0 ? "pos" : "neg") + '">' + mgWon(g.profit) + "</td></tr>";
+  set("mgCmp", tb);
+  MG.m.sauce.forEach(function (row, i) { set("mgsc-" + i, mgWon(mgSauce(row))); });
+  ["wrap", "box"].forEach(function (k) { MG.m[k].forEach(function (row, i) { set("mg" + k + "c-" + i, mgWon(row[1] * row[2])); }); });
+  set("mgSauceSum", mgWon(t.sauce)); set("mgwrapSum", mgWon(t.wrap)); set("mgboxSum", mgWon(t.box));
+  set("mgSave", mgState || (MG_SAVED ? "마지막 저장 " + esc(MG_SAVED) + " · 고치면 가족 모두에게 똑같이 보여요" : "고치면 가족 모두에게 똑같이 보여요"));
+}
+function mgSaveSoon() {
+  mgState = "저장 중…"; mgCalc();
+  clearTimeout(mgTimer);
+  mgTimer = setTimeout(function () {
+    var body = { type: "margin", data: MG, who: (function () { try { return localStorage.getItem("jw_w") || ""; } catch (e) { return ""; } })() };
+    (K ? Promise.resolve(true) : ensureToken()).then(function () {
+      if (K) body.key = K; else body.token = idToken;
+      return fetch(API, { method: "POST", body: JSON.stringify(body) });
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      mgState = j.ok ? "저장됨 " + j.saved + " · 가족 모두에게 똑같이 보여요" : "저장 안 됨 (" + j.error + ")"; if (j.ok) MG_SAVED = j.saved; mgState && mgCalc();
+    }).catch(function () { mgState = "저장 안 됨 · 인터넷을 확인해 주세요"; mgCalc(); });
+  }, 1500);
+}
+document.addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest("[data-mgp],[data-mgc]");
+  if (!b || !MG) return;
+  if (b.getAttribute("data-mgp")) mgUi.prod = b.getAttribute("data-mgp");
+  if (b.getAttribute("data-mgc")) mgUi.ch = b.getAttribute("data-mgc");
+  try { localStorage.setItem("jc_mg_ui", JSON.stringify(mgUi)); } catch (x) {}
+  mgDraw();
+});
+document.addEventListener("input", function (e) {
+  if (!MG || tab !== "margin") return;
+  var id = e.target.id || "", v = mgNum(e.target.value), p = MG.p[mgUi.prod], m, shared = true;
+  if (id === "mg-vat") { mgUi.vat = e.target.checked; shared = false; }
+  else if ((m = id.match(/^mgs-(\d+)-(\d)$/))) MG.m.sauce[+m[1]][+m[2]] = v;
+  else if ((m = id.match(/^mg(wrap|box)-(\d+)-(\d)$/))) MG.m[m[1]][+m[2]][+m[3]] = v;
+  else if (id.indexOf("mgf-") === 0) p[id.slice(4)] = v;
+  else if (id === "mg-price") { MG.price[mgUi.prod] = MG.price[mgUi.prod] || {}; MG.price[mgUi.prod][mgUi.packs] = v; }
+  else if (id === "mg-supply") p.supply = v;
+  else if (id === "mg-fee") MG.c[mgUi.ch].fee = v;
+  else if (id === "mg-ship") MG.c[mgUi.ch].ship = v;
+  else if (id === "mg-monthly") { mgUi.monthly = v; shared = false; }
+  else if (id === "mg-packs") { mgUi.packs = v > 0 ? v : 1; try { localStorage.setItem("jc_mg_ui", JSON.stringify(mgUi)); } catch (x) {} mgDraw(); var pk = document.getElementById("mg-packs"); if (pk) pk.focus(); return; }
+  else return;
+  try { localStorage.setItem("jc_mg_ui", JSON.stringify(mgUi)); } catch (x) {}
+  if (shared) mgSaveSoon(); else mgCalc();
+});
 </script>
 </body>
 </html>
