@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>장우 예약</title>
-<meta name="apple-mobile-web-app-title" content="장우 예약">
+<title>자비스</title>
+<meta name="apple-mobile-web-app-title" content="자비스">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f6f1e8">
@@ -43,8 +43,8 @@ button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 1
 </head>
 <body>
 <div class="w" id="app">
-  <div class="top"><img src="mic-180.png" alt="장우 예약">
-    <div><h1>장우 예약</h1><div class="who" id="who">자비스에게 말하기</div></div></div>
+  <div class="top"><img src="mic-180.png" alt="자비스">
+    <div><h1>자비스</h1><div class="who" id="who">무엇이든 말해 주세요</div></div></div>
   <button id="ph" class="paste">📷 사진 보내기 (예약 장부·캡처)</button>
   <input id="f" type="file" accept="image/*" multiple hidden>
   <button id="p" class="paste">📋 복사한 글 붙여넣고 보내기</button>
@@ -74,7 +74,7 @@ try { if (K) { localStorage.setItem("jw_k", K); localStorage.setItem("jw_w", W);
 if (!K) {
   document.getElementById("app").innerHTML = '<div class="bad">링크가 맞지 않아요.<br>자비스에게 받은 본인 링크로 다시 열어 주세요.</div>';
 } else {
-  if (W) document.getElementById("who").textContent = W + "님 · 자비스에게 말하기";
+  if (W) document.getElementById("who").textContent = W + "님 · 무엇이든 말해 주세요";
   var t = document.getElementById("t"), b = document.getElementById("b"), p = document.getElementById("p"), m = document.getElementById("m");
   var ph = document.getElementById("ph"), f = document.getElementById("f");
   // 🔊 대답을 소리로 (아이폰은 버튼을 누를 때 한 번 깨워 둬야 나중에 말할 수 있다)
