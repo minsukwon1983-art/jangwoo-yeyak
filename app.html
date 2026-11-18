@@ -226,7 +226,7 @@ if (!K) {
     lastSent = text; lastAt = Date.now();
     if (/^(본부|본부 자비스|본부자비스)[,\s]/.test(text)) { m2 = "hq"; text = text.replace(/^(본부\s*자비스|본부)[,\s]*/, ""); }
     if (!text && !images.length) { hint.textContent = "보낼 말이 없어요. 버튼을 눌러 말씀하세요."; return; }
-    t.value = text; wake(); busy(true); m.innerHTML = "";
+    t.value = text; wake(); busy(true); m.innerHTML = ""; $("hqm").innerHTML = "";
     hint.textContent = m2 === "hq" ? "본부 자비스에게 넘기는 중…" : "자비스가 읽고 있어요… (" + (images.length ? "20~30초" : "10초쯤") + ")"; sub.textContent = "";
     fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: text, images: images, mode: m2 }) })
       .then(function (r) { return r.text(); })
@@ -295,8 +295,8 @@ if (!K) {
 
   // 🧠 본부 자비스 대답 가져오기 (기다리는 일이 있으면 15초마다, 아니면 1분마다)
   var seen = 0, waitUntil = 0, polling = false;
-  try { seen = Number(localStorage.getItem("jw_seen") || 0); } catch (e) {}
-  if (!seen) seen = Date.now() - 6 * 3600e3;   // 처음 열면 최근 6시간 대답만
+  // 11/18 대표 "대화 내용 이런 거 필요 없어": 앱을 열면 지난 대답은 안 보여 주고, 이제부터 오는 대답만 하나씩
+  seen = Date.now() - 60e3;
   function poll() {
     if (polling || document.hidden) return; polling = true;
     fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, type: "jvresults", since: seen }) })
@@ -307,7 +307,7 @@ if (!K) {
           var tm = new Date(x.at), hh = ("0" + tm.getHours()).slice(-2) + ":" + ("0" + tm.getMinutes()).slice(-2);
           var tt = document.createElement("span"); tt.className = "t"; tt.textContent = "🧠 본부 자비스 · " + hh + (x.ask ? " · 진행하려면 \"해\"라고 말씀하세요" : "");
           d.appendChild(tt); d.appendChild(document.createTextNode(x.text));
-          $("hqm").insertBefore(d, $("hqm").firstChild);
+          $("hqm").innerHTML = ""; m.innerHTML = ""; $("hqm").appendChild(d);   // 마지막 대답 하나만
           seen = Math.max(seen, x.at); say(x.text);
           if (navigator.vibrate) navigator.vibrate(200);
         });
