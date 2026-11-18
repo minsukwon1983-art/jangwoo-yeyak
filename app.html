@@ -214,7 +214,8 @@ if (!K) {
       d.className = "card" + (/^✅/.test(c) ? " ok" : /^⚠/.test(c) ? " warn" : /^❌/.test(c) ? " bad2" : "");
       d.textContent = c; m.appendChild(d);
     });
-    m.scrollIntoView({ behavior: "smooth", block: "start" });
+    // 11/18 "위에 막 버벅거리고 쓰는 것도 어렵고": 화면을 움직이지 않고, 대답은 12초 뒤 저절로 사라짐 (자세한 결과는 카톡)
+    clearTimeout(window._clr); window._clr = setTimeout(function () { m.innerHTML = ""; $("hqm").innerHTML = ""; }, 12000);
   }
   function showText(on) { t.classList.toggle("hide", !on); b.classList.toggle("hide", !on); }
   document.querySelector(".more").addEventListener("toggle", function () { if (this.open) showText(true); });
@@ -309,6 +310,7 @@ if (!K) {
           d.appendChild(tt); d.appendChild(document.createTextNode(x.text));
           $("hqm").innerHTML = ""; m.innerHTML = ""; $("hqm").appendChild(d);   // 마지막 대답 하나만
           seen = Math.max(seen, x.at); say(x.text);
+          clearTimeout(window._clr); window._clr = setTimeout(function () { $("hqm").innerHTML = ""; }, 12000);
           if (navigator.vibrate) navigator.vibrate(200);
         });
         if ((j.results || []).length) { waitUntil = 0; try { localStorage.setItem("jw_seen", String(seen)); } catch (e) {} }
