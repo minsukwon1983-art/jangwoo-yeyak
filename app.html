@@ -45,7 +45,7 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
 @keyframes pulse{0%,100%{box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 0 8px rgba(224,122,82,.14)}50%{box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 0 22px rgba(224,122,82,.04)}}
 .hint{margin-top:18px;font-size:17px;color:var(--cream);min-height:1.5em;text-align:center}
 .sub{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
-.heard{width:100%;min-height:96px;margin-top:10px;font-size:20px;line-height:1.55;padding:14px 16px;border-radius:16px;
+.heard{width:100%;min-height:64px;margin-top:10px;font-size:20px;line-height:1.55;padding:14px 16px;border-radius:16px;
   background:var(--bg2);border:1px solid var(--line);color:var(--cream);-webkit-appearance:none;resize:none;font-family:inherit}
 .heard:focus{outline:none;border-color:var(--gold)}
 .row{display:flex;gap:10px;margin-top:12px}
@@ -94,11 +94,11 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
     <div class="sub" id="sub">말이 끝나면 자비스가 알아서 보내요</div>
   </div>
 
-  <textarea class="heard hide" id="t" placeholder="들은 말이 여기에 나와요. 눌러서 직접 쓰거나 고칠 수도 있어요."></textarea>
+  <textarea class="heard" id="t" rows="2" placeholder="들은 말이 여기에 나와요. 눌러서 직접 쓰거나 고칠 수도 있어요."></textarea>
   <div class="bar" id="bar"><i id="bari"></i></div>
   <div class="row">
     <button class="btn" id="fix" style="display:none">✋ 멈추고 고치기</button>
-    <button class="btn gold hide" id="b">보내기</button>
+    <button class="btn gold" id="b">보내기</button>
   </div>
   <div class="msg" id="m"></div>
   <div class="msg" id="hqm"></div>
@@ -217,7 +217,7 @@ if (!K) {
     // 11/18 "위에 막 버벅거리고 쓰는 것도 어렵고": 화면을 움직이지 않고, 대답은 12초 뒤 저절로 사라짐 (자세한 결과는 카톡)
     clearTimeout(window._clr); window._clr = setTimeout(function () { m.innerHTML = ""; $("hqm").innerHTML = ""; }, 12000);
   }
-  function showText(on) { t.classList.toggle("hide", !on); b.classList.toggle("hide", !on); }
+  function showText(on) { }   // 11/18 진단: 글 칸이 나타났다 사라지며 화면이 위아래로 흔들림 → 늘 보이게 둠
   document.querySelector(".more").addEventListener("toggle", function () { if (this.open) showText(true); });
   function busy(on) { b.disabled = p.disabled = ph.disabled = mic.disabled = on; b.textContent = on ? "자비스가 읽는 중…" : "보내기"; }
   function send(images) {
@@ -268,8 +268,9 @@ if (!K) {
       var quiet = null;
       rec.onstart = function () { listening = true; mic.classList.add("on"); hint.textContent = "듣고 있어요…"; sub.textContent = "말을 마치면 잠깐 기다리거나 버튼을 다시 누르세요"; };
       rec.onresult = function (e) {
-        var interim = "";
-        for (var i = e.resultIndex; i < e.results.length; i++) {
+        // 11/18 진단: 아이폰은 이미 확정된 말을 다시 보내 줘서 이어 붙이면 말이 두 번 들어감 → 매번 처음부터 다시 만든다
+        var interim = ""; finalText = "";
+        for (var i = 0; i < e.results.length; i++) {
           var res = e.results[i];
           if (res.isFinal) {   // 후보 여러 개 중 장우 말이 가장 많이 들어간 것을 고른다
             var best = res[0].transcript, bs = score(fix(best));
