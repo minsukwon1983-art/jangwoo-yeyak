@@ -110,6 +110,8 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
   </div>
   <input id="f" type="file" accept="image/*" multiple hidden>
   <label class="opt"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
+  <div class="opt" id="vrow">🎙 목소리 <select id="vs" style="flex:1;font-size:15px;padding:8px;border-radius:10px;background:var(--bg2);color:var(--cream);border:1px solid var(--line)"></select>
+    <button class="btn" id="vt" style="flex:0 0 auto;font-size:14px;padding:9px 12px">들어보기</button></div>
   <label class="opt"><input type="checkbox" id="auto" checked> ⚡ 말이 끝나면 3초 뒤 저절로 보내기</label>
 
   <details class="ex"><summary>이렇게 말씀하세요</summary>
@@ -167,10 +169,33 @@ if (!K) {
   // 11/18 대표 "다 합쳐서 같이 쓰자": 버튼 하나. 자비스가 알아서 바로 하거나 본부(사무실 컴퓨터)에 넘긴다. 말 앞에 "본부"를 붙이면 곧장 본부로
   var mode = "quick";
   function wake() { if (tts && v.checked) { tts.cancel(); tts.speak(new SpeechSynthesisUtterance("")); } }
+  // 🎙 목소리: 휴대폰에 있는 한국어 목소리 중 가장 자연스러운 것(고급·향상·남성 우선). 더보기에서 바꿀 수 있음
+  var VOICE = null;
+  function koVoices() { return (tts ? tts.getVoices() : []).filter(function (x) { return /^ko/i.test(x.lang); }); }
+  function rank(x) { var n = x.name, r = 0;
+    if (/premium|enhanced|향상|고급|neural|natural/i.test(n)) r += 10;
+    if (/minsu|민수|injoon|인준|jian|지안|hyunsu|현수|male|남성/i.test(n)) r += 5;
+    if (/google/i.test(n)) r += 2; return r; }
+  function loadVoices() {
+    var list = koVoices().sort(function (a, b) { return rank(b) - rank(a); }), saved = "";
+    try { saved = localStorage.getItem("jw_vname") || ""; } catch (e) {}
+    VOICE = list.filter(function (x) { return x.name === saved; })[0] || list[0] || null;
+    var sel = $("vs"); sel.innerHTML = "";
+    list.forEach(function (x) { var o = document.createElement("option"); o.value = x.name; o.textContent = x.name; if (VOICE && x.name === VOICE.name) o.selected = true; sel.appendChild(o); });
+    $("vrow").style.display = list.length ? "" : "none";
+  }
+  if (tts) { loadVoices(); tts.onvoiceschanged = loadVoices; } else $("vrow").style.display = "none";
+  $("vs").onchange = function () { var n = this.value; VOICE = koVoices().filter(function (x) { return x.name === n; })[0] || VOICE; try { localStorage.setItem("jw_vname", n); } catch (e) {} };
+  $("vt").onclick = function () { var keep = v.checked; v.checked = true; say("네, 대표님. 자비스입니다. 필요한 일 있으면 편하게 말씀하세요."); v.checked = keep; };
+  function speakable(s) {   // 소리로 읽을 때: 기호·괄호·이모지·목록 표시는 빼고 문장으로
+    return String(s).replace(/#job:\w+/g, "").replace(/\([^)]*\)/g, "")
+      .replace(/[☀-➿←-⇿⬀-⯿]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|️/g, "")
+      .replace(/^[\s·•\-*]+/gm, "").replace(/[「」『』"“”]/g, "").replace(/\s*\n+\s*/g, ". ").replace(/\.\s*\./g, ".").replace(/\s{2,}/g, " ").trim().slice(0, 500);
+  }
   function say(s) {
     if (!tts || !v.checked) return;
-    s = s.replace(/[☀-➿]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|️/g, "").replace(/\n+/g, ". ").slice(0, 400);
-    var u = new SpeechSynthesisUtterance(s); u.lang = "ko-KR"; u.rate = 1.0; u.pitch = 0.85; tts.cancel(); tts.speak(u);
+    var u = new SpeechSynthesisUtterance(speakable(s)); u.lang = "ko-KR"; if (VOICE) u.voice = VOICE; u.rate = 1.02; u.pitch = 0.92;
+    tts.cancel(); tts.speak(u);
   }
   function show(r) {
     m.textContent = ""; var cards = [];
