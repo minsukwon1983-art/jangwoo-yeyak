@@ -6,97 +6,155 @@
 <title>자비스</title>
 <meta name="apple-mobile-web-app-title" content="자비스">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#f6f1e8">
+<meta name="theme-color" content="#120f0d">
 <meta name="robots" content="noindex">
 <link rel="apple-touch-icon" href="mic-180.png">
 <link rel="icon" sizes="192x192" href="mic-192.png">
 <link rel="icon" sizes="512x512" href="mic-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <!--
-  장우가든 [장우 예약] 버튼 (아이폰·갤럭시 공용, 홈 화면 아이콘은 마이크 — 장우가든 로고는 자리 배치 앱이 이미 씀)
-  링크: https://minsukwon1983-art.github.io/jangwoo-yeyak/?k=열쇠&w=이름
-  열쇠는 이 파일에 넣지 않는다. 링크에만 있다.
-  보내는 곳: Apps Script 웹 앱 doPost (요청함.gs) → 노션 "자비스 요청함"
+  🎙 자비스 마이크 (2026-11-18 새 디자인, 대표 "완벽한 자비스 마이크, 고급스럽게, 키보드 누르고 마이크 누르는 것 자체가 불편")
+  - 가운데 큰 금색 버튼 한 번 → 바로 듣기(휴대폰 음성 인식 ko-KR). 말이 끝나면 2초 뒤 저절로 보냄([멈추고 고치기]로 멈출 수 있음)
+  - 장우 말 사전으로 받아쓰기 실수(받침·띄어쓰기)를 고친 뒤 보냄. 음성 인식이 안 되는 휴대폰은 예전처럼 키보드 🎤
+  링크: https://minsukwon1983-art.github.io/jangwoo-yeyak/?k=열쇠&w=이름 (열쇠는 이 파일에 넣지 않는다)
+  보내는 곳: Apps Script 웹 앱 doPost (요청함.gs)
 -->
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f6f1e8;color:#2b2118;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-.w{max-width:520px;margin:0 auto;padding:18px 16px 40px}
-.top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.top img{width:56px;height:56px;border-radius:14px}
-h1{font-size:28px;margin:0;color:#7a2e1b}.who{font-size:16px;color:#6b5a48}
-textarea{width:100%;height:24vh;min-height:130px;font-size:20px;line-height:1.5;padding:14px;border:2px solid #c9b79c;border-radius:14px;background:#fff;color:#2b2118;-webkit-appearance:none}
-button{width:100%;font-size:24px;font-weight:700;padding:18px;border:0;border-radius:14px;background:#7a2e1b;color:#fff;margin-top:12px;-webkit-appearance:none}
-button:disabled{opacity:.5}
-button.paste{background:#fff;color:#7a2e1b;border:2px solid #7a2e1b;margin:0 0 12px;font-size:21px;padding:16px}
-.msg{font-size:20px;margin-top:14px;min-height:1.5em;line-height:1.5}
-.card{white-space:pre-line;background:#fff;border:2px solid #d9cdb8;border-left-width:8px;border-radius:12px;padding:12px 14px;margin-bottom:10px;word-break:keep-all}
-.card.ok{border-color:#2f8f5b}.card.warn{border-color:#d9822b;background:#fff6e9;font-weight:600}.card.bad2{border-color:#c0392b;background:#fdecea;font-weight:600}
-.ex{font-size:17px;color:#6b5a48;margin-top:18px;line-height:1.7;background:#fffaf2;border-radius:12px;padding:12px 14px}
-.ex summary{font-weight:700;color:#2b2118;font-size:18px;padding:4px 0}
-.ex b{color:#2b2118}
-.bad{font-size:20px;padding:24px;line-height:1.6}
-.voice{display:flex;align-items:center;gap:10px;font-size:18px;color:#6b5a48;margin-top:12px}
-.voice input{width:26px;height:26px}
+:root{--bg:#120f0d;--bg2:#1b1714;--line:#3a2f25;--gold:#d9b26a;--gold2:#f0d69c;--cream:#f4eadb;--muted:#a8998a;--ok:#5fbf8a;--warn:#e5a04a;--bad:#e06a5a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--cream)}
+body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;min-height:100vh;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background:radial-gradient(120% 60% at 50% 0%,#2a2119 0%,var(--bg) 60%)}
+.w{max-width:520px;margin:0 auto;padding:22px 18px 40px}
+.top{display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:"Noto Serif KR",serif;font-weight:700;font-size:26px;letter-spacing:.12em;color:var(--gold2)}
+.brand small{display:block;font-family:"Noto Sans KR";font-weight:400;font-size:11px;letter-spacing:.32em;color:var(--muted);margin-top:2px}
+.who{font-size:14px;color:var(--muted);text-align:right;line-height:1.4}
+.stage{display:flex;flex-direction:column;align-items:center;margin:34px 0 18px}
+.mic{position:relative;width:178px;height:178px;border-radius:50%;border:0;padding:0;cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,#fbe7b5 0%,#d9b26a 38%,#9c7636 100%);
+  box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 2px 6px rgba(255,255,255,.45),0 0 0 10px rgba(217,178,106,.08)}
+.mic svg{width:64px;height:64px}
+.mic:active{transform:scale(.97)}
+.mic.on{animation:pulse 1.4s ease-in-out infinite;background:radial-gradient(circle at 35% 30%,#ffd9c7 0%,#e07a52 40%,#9b3a22 100%)}
+@keyframes pulse{0%,100%{box-shadow:0 18px 40px rgba(0,0,0,.55),0 0 0 10px rgba(224,122,82,.18)}50%{box-shadow:0 18px 40px rgba(0,0,0,.55),0 0 0 26px rgba(224,122,82,.05)}}
+.hint{margin-top:18px;font-size:17px;color:var(--cream);min-height:1.5em;text-align:center}
+.sub{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
+.heard{width:100%;min-height:96px;margin-top:10px;font-size:20px;line-height:1.55;padding:14px 16px;border-radius:16px;
+  background:var(--bg2);border:1px solid var(--line);color:var(--cream);-webkit-appearance:none;resize:none;font-family:inherit}
+.heard:focus{outline:none;border-color:var(--gold)}
+.row{display:flex;gap:10px;margin-top:12px}
+.btn{flex:1;font-family:inherit;font-size:17px;font-weight:700;padding:15px 10px;border-radius:14px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--cream);-webkit-appearance:none}
+.btn.gold{background:linear-gradient(180deg,#e9c987,#c99c4f);color:#1d150d;border:0}
+.btn:disabled{opacity:.45}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:12px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--gold)}
+.msg{margin-top:16px}
+.card{white-space:pre-line;background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;
+  padding:13px 15px;margin-bottom:10px;font-size:17px;line-height:1.6;word-break:keep-all}
+.card.ok{border-left-color:var(--ok)}.card.warn{border-left-color:var(--warn)}.card.bad2{border-left-color:var(--bad)}
+.tools{display:flex;gap:10px;margin-top:22px}
+.tools .btn{font-size:15px;font-weight:500;color:var(--muted)}
+.opt{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);margin-top:16px}
+.opt input{width:22px;height:22px;accent-color:#c99c4f}
+.ex{font-size:15px;color:var(--muted);margin-top:18px;line-height:1.8;border-top:1px solid var(--line);padding-top:12px}
+.ex summary{color:var(--gold2);font-weight:500;font-size:15px}
+.ex b{color:var(--cream)}
+.bad{font-size:19px;padding:30px 4px;line-height:1.7}
 </style>
 </head>
 <body>
 <div class="w" id="app">
-  <div class="top"><img src="mic-180.png" alt="자비스">
-    <div><h1>자비스</h1><div class="who" id="who">무엇이든 말해 주세요</div></div></div>
-  <button id="ph" class="paste">📷 사진 보내기 (예약 장부·캡처)</button>
-  <input id="f" type="file" accept="image/*" multiple hidden>
-  <button id="p" class="paste">📋 복사한 글 붙여넣고 보내기</button>
-  <textarea id="t" placeholder="여기를 누르고 키보드의 🎤 마이크로 무엇이든 말해 보세요. 예약, 택배, 궁금한 것 다 돼요"></textarea>
-  <button id="b">보내기</button>
-  <label class="voice"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
+  <div class="top">
+    <div class="brand">JARVIS<small>長宇 · 業務秘書</small></div>
+    <div class="who" id="who">무엇이든 말씀하세요</div>
+  </div>
+
+  <div class="stage">
+    <button class="mic" id="mic" aria-label="눌러서 말하기">
+      <svg viewBox="0 0 24 24" fill="#1d150d"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+    </button>
+    <div class="hint" id="hint">눌러서 말씀하세요</div>
+    <div class="sub" id="sub">말이 끝나면 자비스가 알아서 보내요</div>
+  </div>
+
+  <textarea class="heard" id="t" placeholder="들은 말이 여기에 나와요. 눌러서 직접 쓰거나 고칠 수도 있어요."></textarea>
+  <div class="bar" id="bar"><i id="bari"></i></div>
+  <div class="row">
+    <button class="btn" id="fix" style="display:none">✋ 멈추고 고치기</button>
+    <button class="btn gold" id="b">보내기</button>
+  </div>
   <div class="msg" id="m"></div>
-  <details class="ex"><summary>이렇게 보내세요 (눌러서 보기)</summary>
+
+  <div class="tools">
+    <button class="btn" id="ph">📷 사진 보내기</button>
+    <button class="btn" id="p">📋 붙여넣고 보내기</button>
+  </div>
+  <input id="f" type="file" accept="image/*" multiple hidden>
+  <label class="opt"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
+  <label class="opt"><input type="checkbox" id="auto" checked> ⚡ 말이 끝나면 2초 뒤 저절로 보내기</label>
+
+  <details class="ex"><summary>이렇게 말씀하세요</summary>
+  · 📦 <b>"택배 들어온 거 송장 뽑아 줘"</b><br>
   · 새 예약: "26일 저녁 7시 김철수 6명 공일공 1234 5678"<br>
-  · 룸 바꾸기: "25일 김철수님 5번룸으로 바꿔 줘"<br>
-  · 시간·인원: "25일 김철수님 8명, 7시로"<br>
+  · 룸·시간·인원: "25일 김철수님 5번룸으로, 8명, 7시로"<br>
   · 취소: "25일 김철수님 취소"<br>
-  · 네이버 손님 이름·번호: "11월 1일 고별원님 이름 고은원, 번호 공일공 1234 5678"<br>
-  · 에이닷 통화 내용: 화면 <b>캡처</b> → 위 <b>📷 버튼</b> → 캡처 고르기 (여러 장 가능)<br>
-  · 복사한 글이 있으면: 위 <b>📋 버튼</b> 한 번<br>
   · 예약 현황: "오늘 예약 현황 보내 줘"<br>
-  · 📦 택배: "오늘 택배 들어온 거 있어?", "오늘 몇 박스 보내야 돼?"<br>
-  · 🥩 발주: "오늘 장우가 발주 들어왔어?", "이번 주 발주 뭐 있어?"<br>
-  · 💰 마진: "한돈 2팩 네이버에서 팔면 얼마 남아?", "한돈 한 팩 원가 얼마야?"<br>
-  · 📨 보내기: "밥테이블 사장님한테 문자로 내일 고기 들어간다고 보내 줘" → 자비스가 보여 주면 "보내"<br>
-  · 📦 송장: "지금까지 들어온 거 송장 뽑아"<br>
-  · 💬 아무거나: "자비스, 고기 600g이면 몇 인분이야?"<br>
-  · 📝 부탁: "자사몰 LA갈비 품절 풀어 줘" → 자비스 본부에 할 일로 넘어가요<br>
-  → 예약은 자비스가 <b>바로</b> 장부에 넣고 4명에게 카톡을 보냅니다. 대답은 보내기 버튼 아래에 떠요.<br>
-  → 몰 상품 고치기처럼 큰 일은 휴대폰 <b>Claude 앱</b>에서 자비스에게 직접 말하면 다 할 수 있어요 (사무실 컴퓨터가 켜져 있을 때).</details>
+  · 택배: "오늘 택배 들어온 거 있어?"<br>
+  · 발주·마진: "장우가 발주 들어왔어?", "한돈 2팩 네이버에서 팔면 얼마 남아?"<br>
+  · 보내기: "밥테이블 사장님한테 문자로 내일 고기 들어간다고 보내 줘" → 보여 주면 "보내"<br>
+  · 부탁: "자사몰 LA갈비 품절 풀어 줘" → 자비스 본부가 처리<br>
+  · 에이닷 통화·장부 사진: 아래 <b>📷</b> 버튼</details>
 </div>
 <script>
 var URL_ = "https://script.google.com/macros/s/AKfycbwPOkSzu48JYIuWm_2B0cKNOdfr_rwQ3VTt1shG05Ew1wMB92dqQj2maYzbq36Mw0-_/exec";
 var q = new URLSearchParams(location.search), K = q.get("k") || "", W = q.get("w") || "";
-// 홈 화면에서 열 때 주소 뒷부분이 빠지는 경우를 대비해 이 휴대폰에 기억해 둔다
 try { if (K) { localStorage.setItem("jw_k", K); localStorage.setItem("jw_w", W); } else { K = localStorage.getItem("jw_k") || ""; W = localStorage.getItem("jw_w") || ""; } } catch (e) {}
+
+// 📖 장우 말 사전: 받아쓰기가 자주 틀리는 말을 바로잡는다 (받침·띄어쓰기). 고칠 때는 여기에 한 줄 더한다.
+var FIX = [
+  [/(송자|송잔|송짱|손잔|손장|성장|송정)(?=\s*(뽑|뽀|출력|좀|다|들|있|확인|번호))/g, "송장"],
+  [/(뽀바|뽀아|뽑바|뽀빠|뽑와)/g, "뽑아"],
+  [/(택빼|태배|택배이|택패|텍배)/g, "택배"], [/(예얀|여약|예약끄|얘약)/g, "예약"], [/(혀놔|켜놔|현환|형황|현왕|혀황)(?=\s*(보내|알려|좀|줘|어때|뭐))/g, "현황"],
+  [/(바주|발쭈|발추)(?=\s*(들어|넣|확인|했|해))/g, "발주"], [/(추소|치소|취쏘)(?=\s*(해|요|좀|시켜))/g, "취소"],
+  [/송\s*장/g, "송장"],
+  [/(한동|한돈|한 돈|항돈)\s*(양념|양녕|양념이)\s*(구이|구위|구리)?/g, function (_, a, b, c) { return "한돈양념" + (c ? "구이" : ""); }],
+  [/소\s*불\s*고기/g, "소불고기"], [/(엘에이|la|L\.A\.?|LA)\s*(갈비|깔비|갈미)/gi, "LA갈비"],
+  [/장우\s*가\s*든/g, "장우가든"], [/장우\s*에프\s*앤\s*비|장우\s*f\s*&?\s*b/gi, "장우FNB"],
+  [/(갈메|갈 매|칼매)/g, "갈매"], [/(로이스|로이즈|loise?)/gi, "LOIS"], [/(씨제이|시제이|cj\b)/gi, "CJ"],
+  [/스마트\s*스토어/g, "스마트스토어"], [/자사\s*몰/g, "자사몰"], [/카카오\s*톡/g, "카카오톡"], [/선물\s*하기/g, "선물하기"],
+  [/박\s*혜\s*진/g, "박혜진"], [/박\s*상\s*근/g, "박상근"], [/박\s*상\s*미/g, "박상미"], [/권\s*민\s*수/g, "권민수"],
+  [/택\s*배/g, "택배"], [/발\s*주/g, "발주"], [/출\s*고/g, "출고"], [/(밥 테이블|밥테이블)/g, "밥테이블"],
+  [/(공일공|010)\s*(\d{3,4})\s*(\d{4})/g, "010-$2-$3"]
+];
+var WORDS = ["송장", "택배", "예약", "장우", "한돈", "LA갈비", "소불고기", "발주", "출고", "룸", "취소", "현황", "CJ", "네이버", "자사몰", "카카오"];
+function fix(s) { s = String(s || ""); FIX.forEach(function (r) { s = s.replace(r[0], r[1]); }); return s.replace(/\s{2,}/g, " ").trim(); }
+function score(s) { var n = 0; WORDS.forEach(function (w) { if (s.indexOf(w) >= 0) n++; }); return n; }
+
 if (!K) {
   document.getElementById("app").innerHTML = '<div class="bad">링크가 맞지 않아요.<br>자비스에게 받은 본인 링크로 다시 열어 주세요.</div>';
 } else {
-  if (W) document.getElementById("who").textContent = W + "님 · 무엇이든 말해 주세요";
-  var t = document.getElementById("t"), b = document.getElementById("b"), p = document.getElementById("p"), m = document.getElementById("m");
-  var ph = document.getElementById("ph"), f = document.getElementById("f");
-  // 🔊 대답을 소리로 (아이폰은 버튼을 누를 때 한 번 깨워 둬야 나중에 말할 수 있다)
-  var v = document.getElementById("v"), tts = window.speechSynthesis;
-  try { v.checked = localStorage.getItem("jw_voice") === "1"; } catch (e) {}
+  if (W) document.getElementById("who").innerHTML = "<b style='color:var(--cream)'>" + W.replace(/[<>&]/g, "") + "</b>님<br>무엇이든 말씀하세요";
+  var $ = function (id) { return document.getElementById(id); };
+  var t = $("t"), b = $("b"), p = $("p"), m = $("m"), ph = $("ph"), f = $("f"), mic = $("mic"), hint = $("hint"), sub = $("sub");
+  var fixBtn = $("fix"), bar = $("bar"), bari = $("bari"), auto = $("auto"), v = $("v"), tts = window.speechSynthesis;
+  try { v.checked = localStorage.getItem("jw_voice") === "1"; auto.checked = localStorage.getItem("jw_auto") !== "0"; } catch (e) {}
   if (!tts) v.parentNode.style.display = "none";
   v.onchange = function () { try { localStorage.setItem("jw_voice", v.checked ? "1" : "0"); } catch (e) {} };
+  auto.onchange = function () { try { localStorage.setItem("jw_auto", auto.checked ? "1" : "0"); } catch (e) {} };
   function wake() { if (tts && v.checked) { tts.cancel(); tts.speak(new SpeechSynthesisUtterance("")); } }
   function say(s) {
     if (!tts || !v.checked) return;
-    s = s.replace(/[\u2600-\u27BF]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|\uFE0F/g, "").replace(/\n+/g, ". ").slice(0, 400);
-    var u = new SpeechSynthesisUtterance(s); u.lang = "ko-KR"; u.rate = 1.05; tts.cancel(); tts.speak(u);
+    s = s.replace(/[☀-➿]|[\uD83C-\uDBFF][\uDC00-\uDFFF]|️/g, "").replace(/\n+/g, ". ").slice(0, 400);
+    var u = new SpeechSynthesisUtterance(s); u.lang = "ko-KR"; u.rate = 1.0; u.pitch = 0.85; tts.cancel(); tts.speak(u);
   }
-  // 대답을 카드로: ✅ 초록, ⚠ 주황, ❌ 빨강. 새 줄이 ✅·⚠로 시작하면 카드를 나눈다. 대답이 바로 보이게 스크롤
   function show(r) {
-    m.textContent = "";
-    var cards = [];
+    m.textContent = ""; var cards = [];
     String(r).split("\n").forEach(function (l) {
       if (!l.trim()) { cards.push(null); return; }
       var last = cards[cards.length - 1];
@@ -109,17 +167,74 @@ if (!K) {
     });
     m.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  function busy(on) { b.disabled = p.disabled = ph.disabled = on; b.textContent = on ? "보내는 중…" : "보내기"; }
+  function busy(on) { b.disabled = p.disabled = ph.disabled = mic.disabled = on; b.textContent = on ? "자비스가 읽는 중…" : "보내기"; }
   function send(images) {
-    images = images || [];
-    if (!t.value.trim() && !images.length) { m.textContent = "보낼 내용을 먼저 써 주세요."; return; }
-    wake(); busy(true); m.textContent = "자비스가 읽고 있어요… (" + (images.length ? "20~30초" : "10초쯤") + ")";
-    fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: t.value, images: images }) })
+    images = images || []; stopCountdown();
+    var text = fix(t.value);
+    if (!text && !images.length) { hint.textContent = "보낼 말이 없어요. 버튼을 눌러 말씀하세요."; return; }
+    t.value = text; wake(); busy(true); m.innerHTML = "";
+    hint.textContent = "자비스가 읽고 있어요… (" + (images.length ? "20~30초" : "10초쯤") + ")"; sub.textContent = "";
+    fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: text, images: images }) })
       .then(function (r) { return r.text(); })
-      .then(function (r) { show(r); say(r); if (/^(✅|📋|📦|💬|📝)/.test(r) && r.indexOf("⚠") < 0) t.value = ""; })
-      .catch(function () { m.textContent = "❌ 못 보냈어요. 인터넷을 확인하고 다시 눌러 주세요."; })
+      .then(function (r) { show(r); say(r); hint.textContent = "눌러서 말씀하세요"; sub.textContent = "말이 끝나면 자비스가 알아서 보내요";
+        if (/^(✅|📋|📦|💬|📝)/.test(r) && r.indexOf("⚠") < 0) t.value = ""; })
+      .catch(function () { hint.textContent = "❌ 못 보냈어요. 인터넷을 확인하고 다시 눌러 주세요."; })
       .then(function () { busy(false); });
   }
+
+  // ⏳ 말이 끝나면 2초 세고 보내기 (그사이 [멈추고 고치기])
+  var timer = null;
+  function stopCountdown() { if (timer) clearInterval(timer); timer = null; bar.style.display = "none"; fixBtn.style.display = "none"; }
+  function countdown() {
+    if (!auto.checked || !t.value.trim()) return;
+    var start = Date.now(), dur = 2000; bar.style.display = "block"; fixBtn.style.display = "block"; sub.textContent = "곧 보내요. 틀렸으면 ✋ 를 누르세요";
+    timer = setInterval(function () {
+      var k = Math.min(1, (Date.now() - start) / dur); bari.style.width = (k * 100) + "%";
+      if (k >= 1) { stopCountdown(); send(); }
+    }, 40);
+  }
+  fixBtn.onclick = function () { stopCountdown(); hint.textContent = "고친 뒤 [보내기]를 누르세요"; sub.textContent = ""; t.focus(); };
+  t.oninput = stopCountdown;
+
+  // 🎙 음성 인식 (휴대폰 내장, 한국어)
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, listening = false, finalText = "";
+  if (!SR) {
+    hint.textContent = "아래 칸을 누르고 키보드의 🎤 로 말씀하세요"; sub.textContent = "이 휴대폰은 큰 마이크 버튼을 지원하지 않아요";
+    mic.onclick = function () { t.focus(); };
+  } else {
+    mic.onclick = function () {
+      if (listening) { rec.stop(); return; }
+      stopCountdown(); wake(); finalText = ""; t.value = "";
+      rec = new SR(); rec.lang = "ko-KR"; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 3;
+      var quiet = null;
+      rec.onstart = function () { listening = true; mic.classList.add("on"); hint.textContent = "듣고 있어요…"; sub.textContent = "말을 마치면 잠깐 기다리거나 버튼을 다시 누르세요"; };
+      rec.onresult = function (e) {
+        var interim = "";
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          var res = e.results[i];
+          if (res.isFinal) {   // 후보 여러 개 중 장우 말이 가장 많이 들어간 것을 고른다
+            var best = res[0].transcript, bs = score(fix(best));
+            for (var j = 1; j < res.length; j++) { var s2 = score(fix(res[j].transcript)); if (s2 > bs) { best = res[j].transcript; bs = s2; } }
+            finalText += best + " ";
+          } else interim += res[0].transcript;
+        }
+        t.value = fix(finalText + interim);
+        if (quiet) clearTimeout(quiet);
+        quiet = setTimeout(function () { if (listening) rec.stop(); }, 1800);   // 1.8초 조용하면 끝
+      };
+      rec.onerror = function (e) {
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") { hint.textContent = "마이크 사용을 허락해 주세요"; sub.textContent = "설정 → Safari(또는 Chrome) → 마이크 → 허용"; }
+        else if (e.error === "no-speech") { hint.textContent = "잘 안 들렸어요. 다시 눌러 말씀하세요"; }
+      };
+      rec.onend = function () {
+        listening = false; mic.classList.remove("on");
+        t.value = fix(finalText || t.value);
+        if (t.value) { hint.textContent = "이렇게 들었어요"; countdown(); } else if (!/허락|안 들렸/.test(hint.textContent)) hint.textContent = "눌러서 말씀하세요";
+      };
+      try { rec.start(); } catch (e) { hint.textContent = "다시 한 번 눌러 주세요"; }
+    };
+  }
+
   // 📷 캡처 사진: 휴대폰에서 줄여서(긴 쪽 1600px, JPEG) 보낸다
   function shrink(file) {
     return new Promise(function (ok, no) {
@@ -137,21 +252,16 @@ if (!K) {
   f.onchange = function () {
     var files = Array.prototype.slice.call(f.files || [], 0, 4);
     if (!files.length) return;
-    m.textContent = "사진 " + files.length + "장 준비 중…";
-    Promise.all(files.map(shrink)).then(send).catch(function () { m.textContent = "❌ 사진을 못 읽었어요. 다시 골라 주세요."; });
+    hint.textContent = "사진 " + files.length + "장 준비 중…";
+    Promise.all(files.map(shrink)).then(send).catch(function () { hint.textContent = "❌ 사진을 못 읽었어요. 다시 골라 주세요."; });
   };
   b.onclick = function () { send(); };
-  // 📋 복사해 둔 글(에이닷 요약 등)을 붙여넣고 바로 보내기. 아이폰은 처음에 "붙여넣기" 허락 말풍선이 뜰 수 있음
   p.onclick = function () {
-    if (!navigator.clipboard || !navigator.clipboard.readText) {
-      m.textContent = "이 휴대폰에서는 버튼으로 붙여넣기가 안 돼요. 글 칸을 꾹 눌러 붙여넣기 해 주세요."; t.focus(); return;
-    }
+    if (!navigator.clipboard || !navigator.clipboard.readText) { hint.textContent = "글 칸을 꾹 눌러 붙여넣기 해 주세요."; t.focus(); return; }
     navigator.clipboard.readText().then(function (s) {
-      if (!s || !s.trim()) { m.textContent = "복사된 글이 없어요. 에이닷 요약을 먼저 복사해 주세요."; return; }
+      if (!s || !s.trim()) { hint.textContent = "복사된 글이 없어요."; return; }
       t.value = s.trim(); send([]);
-    }).catch(function () {
-      m.textContent = "붙여넣기를 허락해 주세요. 안 되면 글 칸을 꾹 눌러 붙여넣기 해 주세요."; t.focus();
-    });
+    }).catch(function () { hint.textContent = "붙여넣기를 허락해 주세요."; t.focus(); });
   };
 }
 </script>
