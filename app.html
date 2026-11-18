@@ -109,8 +109,8 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
     <button class="btn" id="p">📋 붙여넣고 보내기</button>
   </div>
   <input id="f" type="file" accept="image/*" multiple hidden>
-  <label class="opt"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
-  <div class="opt" id="vrow">🎙 목소리 <select id="vs" style="flex:1;font-size:15px;padding:8px;border-radius:10px;background:var(--bg2);color:var(--cream);border:1px solid var(--line)"></select>
+  <label class="opt" style="display:none"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
+  <div class="opt" id="vrow" style="display:none!important">🎙 목소리 <select id="vs" style="flex:1;font-size:15px;padding:8px;border-radius:10px;background:var(--bg2);color:var(--cream);border:1px solid var(--line)"></select>
     <button class="btn" id="vt" style="flex:0 0 auto;font-size:14px;padding:9px 12px">들어보기</button></div>
   <label class="opt"><input type="checkbox" id="auto" checked> ⚡ 말이 끝나면 3초 뒤 저절로 보내기</label>
 
@@ -196,6 +196,7 @@ if (!K) {
       .replace(/^[\s·•\-*]+/gm, "").replace(/[「」『』"“”]/g, "").replace(/\s*\n+\s*/g, ". ").replace(/\.\s*\./g, ".").replace(/\s{2,}/g, " ").trim().slice(0, 500);
   }
   function say(s) {
+    return;   // 11/18 대표 "목소리 답하는 거 없게" → 소리로 읽기 끔
     if (!tts || !v.checked) return;
     if (s === lastSay && Date.now() - lastSayAt < 8000) return; lastSay = s; lastSayAt = Date.now();
     var u = new SpeechSynthesisUtterance(speakable(s)); u.lang = "ko-KR"; if (VOICE) u.voice = VOICE; u.rate = 1.02; u.pitch = 0.92;
