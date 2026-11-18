@@ -192,6 +192,11 @@ body.nl .fab{bottom:calc(150px + env(safe-area-inset-bottom))}
 .of-items div{display:flex;justify-content:space-between;padding:3px 0;font-variant-numeric:tabular-nums}.of-items em{font-style:normal;color:var(--muted);font-size:12px;margin-left:4px}
 .of-warn{font-size:13px;color:#8a5a00;background:#fff4d6;border-radius:10px;padding:8px 10px;margin-top:10px;line-height:1.5}
 .of-cap{font-size:14px;color:var(--muted);margin-top:8px}
+.of-mon{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin:0 16px 10px;padding:13px 14px;cursor:pointer}
+.of-mon b{font-size:17px;white-space:nowrap}.of-mon b small{font-size:12px;color:var(--gold);font-weight:700;margin-left:2px}
+.of-mon span{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.of-mon em{font-style:normal}.of-mon i{font-style:normal;font-weight:800}.of-mon i.pos{color:var(--ok)}.of-mon i.neg{color:var(--warn)}
+.of-mon.open{background:#f3ece2}
 </style>
 </head>
 <body>
@@ -707,6 +712,7 @@ function offlineOpen() {
     OF = j;
     var done = j.months.filter(function (m) { return !m.partial; });
     ofMonth = (done[done.length - 1] || j.months[j.months.length - 1]).month;
+    ofOpen["m" + ofMonth] = true;   // 처음엔 지난달(마감된 가장 최근 달)만 펼침
     if (tab === "offline") ofDraw();
   }).catch(function (e) {
     if (authFail(e)) return;
@@ -716,10 +722,18 @@ function offlineOpen() {
 function ofDraw() {
   var h = head();
   h += '<div class="of-live">' + OF.live.map(function (s) { return '<div><span>' + esc(s.name) + ' 오늘</span><b>' + ofWon(s.today) + '</b><span>어제 ' + ofWon(s.yday) + '</span></div>'; }).join("") + '</div>';
-  h += '<div class="mgt">' + OF.months.map(function (m) {
-    return '<button data-ofm="' + m.month + '" class="' + (m.month === ofMonth ? "on" : "") + '">' + (+m.month.slice(5)) + '월' + (m.partial ? '(진행 중)' : '') + '</button>';
-  }).join("") + '</div>';
-  var M = OF.months.filter(function (m) { return m.month === ofMonth; })[0];
+  // 달마다 한 줄 (최근 달이 위). 누르면 그 달 카드가 펼쳐지고 다시 누르면 접힘 (11/18 대표 "달로 표현, 지난달 건 열어서 볼 수 있게")
+  OF.months.slice().reverse().forEach(function (M) {
+    var open = !!ofOpen["m" + M.month];
+    h += '<div class="of-mon' + (open ? ' open' : '') + '" data-ofm="' + M.month + '"><b>' + (+M.month.slice(0, 4)) + '년 ' + (+M.month.slice(5)) + '월' + (M.partial ? ' <small>진행 중</small>' : '') + '</b><span>' +
+      M.biz.map(function (b) { return '<em>' + esc(b.name.replace("장우가든 ", "").replace("장우가 ", "")) + '</em> <i class="' + (b.net >= 0 ? "pos" : "neg") + '">' + ofWon(b.net) + '</i>'; }).join(" · ") + ' ' + (open ? "▴" : "▾") + '</span></div>';
+    if (open) h += ofMonthCards(M);
+  });
+  h += '<div class="upd">포스 매출은 30분마다, 계산서는 1시간마다 자동으로 들어와요' + (OF.readAt ? ' · 포스 ' + esc(OF.readAt) : '') + '</div>';
+  app.innerHTML = h;
+}
+function ofMonthCards(M) {
+  var h = "", ofMonth = M.month;
   M.biz.forEach(function (b) {
     var tot = b.sales || 1, net = b.net;
     var seg = function (v, c) { return v > 0 ? '<i style="width:' + Math.min(100, v / tot * 100) + '%;background:' + c + '"></i>' : ''; };
@@ -744,14 +758,13 @@ function ofDraw() {
     if (b.note) h += '<div class="of-warn">⚠ 아직 빠진 것: ' + esc(b.note) + '</div>';
     h += '</div>';
   });
-  h += '<div class="upd">포스 매출은 30분마다, 계산서는 1시간마다 자동으로 들어와요' + (OF.readAt ? ' · 포스 ' + esc(OF.readAt) : '') + '</div>';
-  app.innerHTML = h;
+  return h;
 }
 document.addEventListener("click", function (ev) {
   if (tab !== "offline" || !OF) return;
   var t = ev.target.closest("[data-ofm],[data-ofx]");
   if (!t) return;
-  if (t.dataset.ofm) ofMonth = t.dataset.ofm;
+  if (t.dataset.ofm) ofOpen["m" + t.dataset.ofm] = !ofOpen["m" + t.dataset.ofm];
   if (t.dataset.ofx) ofOpen[t.dataset.ofx] = !ofOpen[t.dataset.ofx];
   ofDraw();
 });
