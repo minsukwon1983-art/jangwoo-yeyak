@@ -87,11 +87,7 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
     </button>
     <div class="hint" id="hint">눌러서 말씀하세요</div>
     <div class="sub" id="sub">말이 끝나면 자비스가 알아서 보내요</div>
-    <div class="seg" role="tablist">
-      <button id="mq" class="on">⚡ 빠른 자비스</button>
-      <button id="mh">🧠 본부 자비스</button>
-    </div>
-    <div class="modeinfo" id="mi">예약·택배·발주·상식 질문 → 10초 안에 바로 대답</div>
+    <div class="modeinfo">바로 되는 일은 10초 안에, 큰일은 본부 자비스(사무실 컴퓨터)가 처리해서 이 화면에 알려 드려요</div>
   </div>
 
   <textarea class="heard" id="t" placeholder="들은 말이 여기에 나와요. 눌러서 직접 쓰거나 고칠 수도 있어요."></textarea>
@@ -121,7 +117,7 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
   · 발주·마진: "장우가 발주 들어왔어?", "한돈 2팩 네이버에서 팔면 얼마 남아?"<br>
   · 보내기: "밥테이블 사장님한테 문자로 내일 고기 들어간다고 보내 줘" → 보여 주면 "보내"<br>
   · 부탁: "자사몰 LA갈비 품절 풀어 줘" → 자비스 본부가 처리<br>
-  · 🧠 본부 자비스: "자사몰 리뷰 이번 주 거 정리해 줘", "인스타 다음 릴스 아이디어 3개 줘" (말 앞에 "본부"를 붙여도 돼요)<br>
+  · 큰일도 그냥 말씀하세요: "자사몰 리뷰 이번 주 거 정리해 줘" → 본부 자비스가 처리하고 여기에 알려 드려요 (말 앞에 "본부"를 붙이면 곧장 본부로)<br>
   · 궁금한 것 아무거나: "내일 남양주 날씨 어때?", "소고기 등심이랑 채끝 차이가 뭐야?", "부가세 신고 언제까지야?"<br>
   · 에이닷 통화·장부 사진: 아래 <b>📷</b> 버튼</details>
 </div>
@@ -162,13 +158,8 @@ if (!K) {
   v.onchange = function () { try { localStorage.setItem("jw_voice", v.checked ? "1" : "0"); } catch (e) {} };
   auto.onchange = function () { try { localStorage.setItem("jw_auto", auto.checked ? "1" : "0"); } catch (e) {} };
   // 🧠 모드: 빠른(Apps Script 안 Claude, 10초) / 본부(사무실 컴퓨터의 Claude 그 자체, 모든 일, 1~5분)
-  var mode = "quick"; try { mode = localStorage.getItem("jw_mode") || "quick"; } catch (e) {}
-  var MI = { quick: "예약·택배·발주·상식 질문 → 10초 안에 바로 대답",
-             hq: "사무실 컴퓨터의 자비스(Claude)가 직접 일해요 — 조사·글쓰기·사이트 작업 등 무엇이든. 대답은 1~5분 뒤 여기와 카톡으로" };
-  function setMode(x) { mode = x; $("mq").className = x === "quick" ? "on" : ""; $("mh").className = x === "hq" ? "on" : ""; $("mi").textContent = MI[x];
-    try { localStorage.setItem("jw_mode", x); } catch (e) {} }
-  $("mq").onclick = function () { setMode("quick"); }; $("mh").onclick = function () { setMode("hq"); };
-  setMode(mode);
+  // 11/18 대표 "다 합쳐서 같이 쓰자": 버튼 하나. 자비스가 알아서 바로 하거나 본부(사무실 컴퓨터)에 넘긴다. 말 앞에 "본부"를 붙이면 곧장 본부로
+  var mode = "quick";
   function wake() { if (tts && v.checked) { tts.cancel(); tts.speak(new SpeechSynthesisUtterance("")); } }
   function say(s) {
     if (!tts || !v.checked) return;
@@ -200,7 +191,8 @@ if (!K) {
     fetch(URL_, { method: "POST", body: JSON.stringify({ key: K, who: W, text: text, images: images, mode: m2 }) })
       .then(function (r) { return r.text(); })
       .then(function (r) {
-        var jm = r.match(/#job:(\w+)/); if (jm) { r = r.replace(/\n?#job:\w+/, ""); waitUntil = Date.now() + 30 * 60e3; poll(); }
+        var jm = r.match(/#job:(\w+)/); if (jm) r = r.replace(/\n?#job:\w+/, "");
+        if (jm || /본부/.test(r)) { waitUntil = Date.now() + 30 * 60e3; setTimeout(poll, 15000); }   // 본부에 넘긴 일 → 대답을 15초마다 확인
         show(r); say(r); hint.textContent = "눌러서 말씀하세요"; sub.textContent = "말이 끝나면 자비스가 알아서 보내요";
         if (/^(✅|📋|📦|💬|📝)/.test(r) && r.indexOf("⚠") < 0) t.value = ""; })
       .catch(function () { hint.textContent = "❌ 못 보냈어요. 인터넷을 확인하고 다시 눌러 주세요."; })
