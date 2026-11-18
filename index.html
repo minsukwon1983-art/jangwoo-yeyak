@@ -109,7 +109,7 @@ body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;m
   </div>
   <input id="f" type="file" accept="image/*" multiple hidden>
   <label class="opt"><input type="checkbox" id="v"> 🔊 자비스 대답을 소리로 듣기</label>
-  <label class="opt"><input type="checkbox" id="auto" checked> ⚡ 말이 끝나면 2초 뒤 저절로 보내기</label>
+  <label class="opt"><input type="checkbox" id="auto" checked> ⚡ 말이 끝나면 3초 뒤 저절로 보내기</label>
 
   <details class="ex"><summary>이렇게 말씀하세요</summary>
   · 📦 <b>"택배 들어온 거 송장 뽑아 줘"</b><br>
@@ -207,12 +207,12 @@ if (!K) {
       .then(function () { busy(false); });
   }
 
-  // ⏳ 말이 끝나면 2초 세고 보내기 (그사이 [멈추고 고치기])
+  // ⏳ 말이 끝나면 3초 세고 보내기 (그사이 [멈추고 고치기])
   var timer = null;
   function stopCountdown() { if (timer) clearInterval(timer); timer = null; bar.style.display = "none"; fixBtn.style.display = "none"; }
   function countdown() {
     if (!auto.checked || !t.value.trim()) return;
-    var start = Date.now(), dur = 2000; bar.style.display = "block"; fixBtn.style.display = "block"; sub.textContent = "곧 보내요. 틀렸으면 ✋ 를 누르세요";
+    var start = Date.now(), dur = 3000; bar.style.display = "block"; fixBtn.style.display = "block"; sub.textContent = "곧 보내요. 틀렸으면 ✋ 를 누르세요";
     timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / dur); bari.style.width = (k * 100) + "%";
       if (k >= 1) { stopCountdown(); send(); }
@@ -245,7 +245,7 @@ if (!K) {
         }
         t.value = fix(finalText + interim);
         if (quiet) clearTimeout(quiet);
-        quiet = setTimeout(function () { if (listening) rec.stop(); }, 1800);   // 1.8초 조용하면 끝
+        quiet = setTimeout(function () { if (listening) rec.stop(); }, 3500);   // 3.5초 조용하면 끝 (11/18 대표 "너무 짧다")
       };
       rec.onerror = function (e) {
         if (e.error === "not-allowed" || e.error === "service-not-allowed") { hint.textContent = "마이크 사용을 허락해 주세요"; sub.textContent = "설정 → Safari(또는 Chrome) → 마이크 → 허용"; }
