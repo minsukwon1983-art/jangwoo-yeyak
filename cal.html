@@ -170,6 +170,25 @@ body.nl .fab{bottom:calc(150px + env(safe-area-inset-bottom))}
 .mgx th:first-child,.mgx td:first-child{text-align:left}.mgx td.pos{color:var(--ok);font-weight:800}.mgx td.neg{color:var(--warn);font-weight:800}.mgx tr.now td{background:#fbf1e3}
 .mgm input{width:74px;font:inherit;font-size:15px;font-weight:700;text-align:right;border:1px solid var(--line);border-radius:8px;padding:5px 6px;background:var(--bg);color:var(--ink)}
 .mgm small{margin-left:3px;color:var(--muted);font-size:12px}
+/* 🏪 오프라인 현황 (임원만, 2026-11-18) */
+.of-live{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 12px}
+.of-live div{background:#fff;border-radius:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:12px 14px}
+.of-live b{display:block;font-size:22px;font-weight:800;letter-spacing:-.5px}.of-live span{font-size:13px;color:var(--muted)}
+.of-card{background:#fff;border-radius:18px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin:0 16px 14px;padding:16px}
+.of-card h3{margin:0 0 2px;font-size:19px}.of-card h3 small{font-size:13px;color:var(--muted);font-weight:600;margin-left:4px}
+.of-net{font-size:34px;font-weight:800;letter-spacing:-1px;margin:6px 0 0}.of-net.pos{color:var(--ok)}.of-net.neg{color:var(--warn)}
+.of-sub{font-size:14px;color:var(--muted);margin-bottom:10px}
+.of-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line);margin:8px 0 6px}
+.of-bar i{display:block;height:100%}
+.of-leg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin-bottom:6px}.of-leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:0}
+.of-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:17px;font-variant-numeric:tabular-nums}
+.of-row .k{display:flex;align-items:center;gap:8px}.of-row .k i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.of-row.tot{font-weight:800;font-size:18px;border-top:2px solid var(--ink)}
+.of-row button{border:0;background:none;color:var(--muted);font-size:13px;padding:0 0 0 6px}
+.of-items{font-size:14px;color:var(--ink);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 6px}
+.of-items div{display:flex;justify-content:space-between;padding:3px 0;font-variant-numeric:tabular-nums}.of-items em{font-style:normal;color:var(--muted);font-size:12px;margin-left:4px}
+.of-warn{font-size:13px;color:#8a5a00;background:#fff4d6;border-radius:10px;padding:8px 10px;margin-top:10px;line-height:1.5}
+.of-cap{font-size:14px;color:var(--muted);margin-top:8px}
 </style>
 </head>
 <body>
@@ -181,6 +200,7 @@ body.nl .fab{bottom:calc(150px + env(safe-area-inset-bottom))}
   <button data-t="month"><span class="i">📅</span>달력</button>
   <button data-t="stats"><span class="i">📊</span>통계</button>
   <button data-t="margin" id="tbm" hidden><span class="i">💰</span>마진</button>
+  <button data-t="offline" id="tbo" hidden><span class="i">🏪</span>오프라인</button>
 </nav></div>
 <div class="srch" id="srch" hidden>
   <div class="bx"><button class="ib" id="sx">←</button><input id="sq" type="search" placeholder="이름 또는 전화번호 뒤 4자리" enterkeyhint="search"></div>
@@ -203,7 +223,7 @@ var HOL = {
 var q = new URLSearchParams(location.search), K = q.get("k") || "", V = q.get("v") || "";
 try { if (K || V) { localStorage.setItem("jc_k", K); localStorage.setItem("jc_v", V); } else { K = localStorage.getItem("jc_k") || ""; V = localStorage.getItem("jc_v") || ""; } } catch (e) {}
 try { if (K && localStorage.getItem("jw_k")) document.getElementById("fab").style.display = "flex"; } catch (e) {}
-if (!(V && !K)) document.getElementById("tbm").hidden = false;   // 💰 마진 탭은 임원 링크·본사 로그인만 (직원용 링크엔 안 보임)
+if (!(V && !K)) { document.getElementById("tbm").hidden = false; document.getElementById("tbo").hidden = false; }  // 💰 마진 탭은 임원 링크·본사 로그인만 (직원용 링크엔 안 보임)
 
 /* ---------- 로그인 (링크 열쇠가 없을 때: 예전 "장우가든 예약" 앱처럼 발주 앱 본사 계정으로) ---------- */
 var FIREBASE_API_KEY = "AIzaSyD1gPJ1VR0EEEDbi8drWSp5Zew9c2gvTo4";   // 파이어베이스 웹 키 (공개용, 비밀 아님)
@@ -296,6 +316,7 @@ function rowsOn(ds) { return (cache[ym(ds)] || []).filter(function (r) { return 
 function go(force) {
   if (!K && !V && !ls("jw_refresh") && !idToken) { showLogin(); return; }
   if (tab === "margin") { marginOpen(); return; }
+  if (tab === "offline") { offlineOpen(); return; }
   var ms = [];
   if (tab === "today") ms = [ym(todayStr()), ym(add(todayStr(), 1))];
   if (tab === "week") ms = [ym(wkStart), ym(add(wkStart, 6))];
@@ -665,6 +686,71 @@ document.addEventListener("input", function (e) {
   else return;
   try { localStorage.setItem("jc_mg_ui", JSON.stringify(mgUi)); } catch (x) {}
   if (shared) mgSaveSoon(); else mgCalc();
+});
+</script>
+<script>
+/* ---------- 🏪 오프라인 현황 (임원만, 2026-11-18 대표 "마진 옆에 오프라인 현황, 매출·매입·지출·인건비·순이익 딱딱") ----------
+   자료: Apps Script ?p=offline (매입.gs offline_get_) — 포스 월 매출(부가세 뺌) − 세금계산서·계산서 매입/지출 − 노무법인 급여대장 인건비.
+   숫자는 공개 코드에 없고 임원 열쇠·본사 로그인으로만 받는다. */
+var OF = null, ofMonth = "", ofOpen = {};
+var OF_COL = { buy: "#c9822f", spend: "#7b52c9", labor: "#2f6fd0", net: "#2e8b57" };
+function ofWon(n) { if (n == null) return "—"; var a = Math.abs(n); return (n < 0 ? "-" : "") + (a >= 1e8 ? (Math.floor(a / 1e8) + "억 " + (Math.round(a % 1e8 / 1e4) ? Math.round(a % 1e8 / 1e4).toLocaleString("ko-KR") + "만" : "")) : a >= 1e4 ? Math.round(a / 1e4).toLocaleString("ko-KR") + "만" : Math.round(a).toLocaleString("ko-KR")) + "원"; }
+function offlineOpen() {
+  document.querySelector(".tb").hidden = false;
+  if (OF) { ofDraw(); return; }
+  app.innerHTML = head() + '<div class="msg"><span class="spin"></span> 불러오는 중…</div>';
+  auth().then(function (a) { return fetch(API + "?p=offline" + a); }).then(function (r) { return r.json(); }).then(function (j) {
+    if (!j.ok) throw new Error(j.error || "server");
+    OF = j;
+    var done = j.months.filter(function (m) { return !m.partial; });
+    ofMonth = (done[done.length - 1] || j.months[j.months.length - 1]).month;
+    if (tab === "offline") ofDraw();
+  }).catch(function (e) {
+    if (authFail(e)) return;
+    app.innerHTML = head() + '<div class="msg">' + (String(e && e.message) === "key" ? "오프라인 현황은 임원 링크로만 볼 수 있어요." : "인터넷을 확인하고 다시 열어 주세요.") + '</div>';
+  });
+}
+function ofDraw() {
+  var h = head();
+  h += '<div class="of-live">' + OF.live.map(function (s) { return '<div><span>' + esc(s.name) + ' 오늘</span><b>' + ofWon(s.today) + '</b><span>어제 ' + ofWon(s.yday) + '</span></div>'; }).join("") + '</div>';
+  h += '<div class="mgt">' + OF.months.map(function (m) {
+    return '<button data-ofm="' + m.month + '" class="' + (m.month === ofMonth ? "on" : "") + '">' + (+m.month.slice(5)) + '월' + (m.partial ? '(진행 중)' : '') + '</button>';
+  }).join("") + '</div>';
+  var M = OF.months.filter(function (m) { return m.month === ofMonth; })[0];
+  M.biz.forEach(function (b) {
+    var tot = b.sales || 1, net = b.net;
+    var seg = function (v, c) { return v > 0 ? '<i style="width:' + Math.min(100, v / tot * 100) + '%;background:' + c + '"></i>' : ''; };
+    h += '<div class="of-card"><h3>' + esc(b.name) + '<small>' + esc(b.biz) + ' · ' + (+ofMonth.slice(5)) + '월' + (M.partial ? ' (진행 중)' : '') + '</small></h3>';
+    h += '<div class="of-net ' + (net >= 0 ? "pos" : "neg") + '">' + ofWon(net) + '</div>';
+    h += '<div class="of-sub">순이익 · 매출의 ' + (b.sales ? Math.round(net / b.sales * 100) : 0) + '%' + (b.labor == null ? ' · ⚠ 인건비 아직 없음' : '') + '</div>';
+    h += '<div class="of-bar">' + seg(b.buy, OF_COL.buy) + seg(b.spend, OF_COL.spend) + seg(b.labor || 0, OF_COL.labor) + seg(Math.max(0, net), OF_COL.net) + '</div>';
+    h += '<div class="of-leg"><span><i style="background:' + OF_COL.buy + '"></i>매입</span><span><i style="background:' + OF_COL.spend + '"></i>지출</span><span><i style="background:' + OF_COL.labor + '"></i>인건비</span><span><i style="background:' + OF_COL.net + '"></i>순이익</span></div>';
+    h += '<div class="of-row"><span class="k">매출 (부가세 뺌)</span><b>' + ofWon(b.sales) + '</b></div>';
+    [["buy", "− 매입 (식자재·물품)"], ["spend", "− 지출 (임대·마케팅·수수료 등)"]].forEach(function (x) {
+      var key = ofMonth + b.biz + x[0], list = b.items[x[0]] || [];
+      h += '<div class="of-row"><span class="k"><i style="background:' + OF_COL[x[0]] + '"></i>' + x[1] + (list.length ? '<button data-ofx="' + key + '">' + (ofOpen[key] ? "접기" : list.length + "건 ▾") + '</button>' : '') + '</span><span>' + ofWon(b[x[0]]) + '</span></div>';
+      if (ofOpen[key]) h += '<div class="of-items">' + list.map(function (it) { return '<div><span>' + esc(it.v) + (it.memo ? '<em>' + esc(it.memo.replace("(우리 회사끼리)", "")) + '</em>' : '') + '</span><span>' + ofWon(it.amt) + '</span></div>'; }).join("") + '</div>';
+    });
+    h += '<div class="of-row"><span class="k"><i style="background:' + OF_COL.labor + '"></i>− 인건비 (급여·일용·4대보험)</span><span>' + (b.labor == null ? "아직 없음" : ofWon(b.labor)) + '</span></div>';
+    h += '<div class="of-row tot"><span>= 순이익</span><span style="color:' + (net >= 0 ? "var(--ok)" : "var(--warn)") + '">' + ofWon(net) + '</span></div>';
+    if (b.capex) {
+      var ck = ofMonth + b.biz + "capex";
+      h += '<div class="of-cap">🏗 공사·설비 (한 번만 드는 돈, 위 계산에서 뺌): <b>' + ofWon(b.capex) + '</b> <button style="border:0;background:none;color:var(--muted)" data-ofx="' + ck + '">' + (ofOpen[ck] ? "접기" : "보기 ▾") + '</button> · 빼면 ' + ofWon(net - b.capex) + '</div>';
+      if (ofOpen[ck]) h += '<div class="of-items">' + b.items.capex.map(function (it) { return '<div><span>' + esc(it.v) + '</span><span>' + ofWon(it.amt) + '</span></div>'; }).join("") + '</div>';
+    }
+    if (b.note) h += '<div class="of-warn">⚠ 아직 빠진 것: ' + esc(b.note) + '</div>';
+    h += '</div>';
+  });
+  h += '<div class="upd">포스 매출은 30분마다, 계산서는 1시간마다 자동으로 들어와요' + (OF.readAt ? ' · 포스 ' + esc(OF.readAt) : '') + '</div>';
+  app.innerHTML = h;
+}
+document.addEventListener("click", function (ev) {
+  if (tab !== "offline" || !OF) return;
+  var t = ev.target.closest("[data-ofm],[data-ofx]");
+  if (!t) return;
+  if (t.dataset.ofm) ofMonth = t.dataset.ofm;
+  if (t.dataset.ofx) ofOpen[t.dataset.ofx] = !ofOpen[t.dataset.ofx];
+  ofDraw();
 });
 </script>
 </body>
