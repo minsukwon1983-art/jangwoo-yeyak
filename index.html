@@ -182,9 +182,11 @@ if (!K) {
     VOICE = list.filter(function (x) { return x.name === saved; })[0] || list[0] || null;
     var sel = $("vs"); sel.innerHTML = "";
     list.forEach(function (x) { var o = document.createElement("option"); o.value = x.name; o.textContent = x.name; if (VOICE && x.name === VOICE.name) o.selected = true; sel.appendChild(o); });
-    $("vrow").style.display = list.length ? "" : "none";
+    if (!list.length) { var o = document.createElement("option"); o.textContent = "휴대폰 기본 목소리"; sel.appendChild(o); }
   }
-  if (tts) { loadVoices(); tts.onvoiceschanged = loadVoices; } else $("vrow").style.display = "none";
+  // 아이폰은 목소리 목록이 늦게 오고 알림도 잘 안 와서 몇 번 더 읽는다
+  if (tts) { loadVoices(); tts.onvoiceschanged = loadVoices; [300, 1000, 2500].forEach(function (ms) { setTimeout(loadVoices, ms); });
+    document.querySelector(".more").addEventListener("toggle", loadVoices); } else $("vrow").style.display = "none";
   $("vs").onchange = function () { var n = this.value; VOICE = koVoices().filter(function (x) { return x.name === n; })[0] || VOICE; try { localStorage.setItem("jw_vname", n); } catch (e) {} };
   $("vt").onclick = function () { var keep = v.checked; v.checked = true; say("네, 대표님. 자비스입니다. 필요한 일 있으면 편하게 말씀하세요."); v.checked = keep; };
   function speakable(s) {   // 소리로 읽을 때: 기호·괄호·이모지·목록 표시는 빼고 문장으로
